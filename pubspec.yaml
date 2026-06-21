@@ -1,0 +1,74 @@
+name: flutter_video_player
+description: Android-only video player (ExoPlayer/Media3 engine).
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Video playback is provided by a custom native Media3/ExoPlayer layer
+  # (android/.../ExoPlayer*.kt) bridged via platform channels + a platform view.
+  # No Dart video package is used.
+
+  # File picking
+  file_picker: ^8.0.3
+
+  # Persistence
+  shared_preferences: ^2.2.3
+
+  # Thumbnail generation (uses Android MediaMetadataRetriever — no FFmpeg needed)
+  video_thumbnail: ^0.5.3
+
+  # Disk cache directory
+  path_provider: ^2.1.3
+
+  # Screen brightness control for swipe gesture
+  screen_brightness: ^0.2.2+1
+
+  # Device system volume control for swipe gesture
+  flutter_volume_controller: ^1.3.4
+
+  # Utilities
+  path: ^1.9.0
+  wakelock_plus: ^1.2.1
+  freezed_annotation: ^2.4.1
+  permission_handler: ^12.0.2
+  share_plus: ^10.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.3
+  freezed: ^2.5.2
+  json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.7
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+
+flutter_native_splash:
+  color: "#050B0B"
+  image: "assets/icon.png"
+  android_12:
+    image: "assets/icon.png"
+    icon_background_color: "#050B0B"
+    color: "#050B0B"

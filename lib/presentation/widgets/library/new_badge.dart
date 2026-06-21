@@ -1,0 +1,27 @@
+import '../../../core/theme/app_theme.dart';
+import 'package:flutter/material.dart';
+
+class NewBadge extends StatelessWidget {
+  const NewBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: context.colors.accentSoft,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: context.colors.accentGlow, width: 1),
+      ),
+      child: Text(
+        'NEW',
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: context.colors.accent,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
