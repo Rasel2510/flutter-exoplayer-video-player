@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/video_file.dart';
+import '../services/thumbnail_service.dart';
 import '../presentation/providers/player_provider.dart';
 import '../presentation/providers/subtitle_style_provider.dart';
 import '../presentation/widgets/player/player_controls_overlay/player_controls_overlay.dart';
@@ -351,9 +353,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   if (!isInitialized || textureId == null) {
                     // While popping, don't flash the spinner over the outgoing
                     // screen — just let the black Scaffold show through.
-                    return _leaving
-                        ? const SizedBox.shrink()
-                        : const Center(child: CircularProgressIndicator());
+                    if (_leaving) return const SizedBox.shrink();
+                    // Paint the already-cached thumbnail as a poster behind the
+                    // spinner so tapping a video shows its frame instantly,
+                    // instead of a black gap, while the decoder warms up.
+                    final path = ref.read(playerProvider).currentVideo?.path ??
+                        widget.filePath;
+                    return _LoadingPoster(videoPath: path);
                   }
 
                   // The native ExoPlayer renders into this Flutter texture.
@@ -512,6 +518,45 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Loading poster ─────────────────────────────────────────────────────────────
+
+/// Shown while the native player warms up (before the first frame). Paints the
+/// video's already-cached thumbnail as a full-screen poster behind a spinner so
+/// the transition into playback feels instant instead of black.
+///
+/// [ThumbnailService.getThumbnail] returns from its in-memory `_resolved` map
+/// when the library already generated the thumbnail (the common case), so the
+/// poster appears on the next microtask with no disk hit.
+class _LoadingPoster extends StatelessWidget {
+  final String videoPath;
+  const _LoadingPoster({required this.videoPath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FutureBuilder<File?>(
+          future: ThumbnailService.instance.getThumbnail(videoPath),
+          builder: (context, snap) {
+            final file = snap.data;
+            if (file == null) return const SizedBox.shrink();
+            // contain → same letterboxing the video will use, so there's no
+            // jump when the real frame replaces the poster.
+            return Image.file(
+              file,
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.low,
+            );
+          },
+        ),
+        const Center(child: CircularProgressIndicator()),
+      ],
     );
   }
 }
