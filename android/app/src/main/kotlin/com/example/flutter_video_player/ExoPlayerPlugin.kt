@@ -5,7 +5,6 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.view.Surface
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -117,9 +116,23 @@ class ExoPlayerPlugin(
             context,
             DefaultRenderersFactory(context).setEnableDecoderFallback(true),
         ).build()
-        private val textureEntry = textures.createSurfaceTexture()
-        val textureId: Long = textureEntry.id()
-        private val surface: Surface
+        // SurfaceProducer (not the legacy createSurfaceTexture) — the only
+        // texture path that renders correctly under Impeller, the default Android
+        // renderer in modern Flutter. The old path showed audio with a black
+        // picture.
+        private val surfaceProducer = textures.createSurfaceProducer()
+        val textureId: Long = surfaceProducer.id()
+
+        // Video-render watchdog: if the file has a video track but ExoPlayer
+        // never renders a frame (a codec it claims to support but can't actually
+        // decode, e.g. some 10-bit HEVC), fall back to the software engine.
+        private var hasVideoTrack = false
+        private var firstFrameRendered = false
+        private val videoWatchdog = Runnable {
+            if (hasVideoTrack && !firstFrameRendered) {
+                send(mapOf("event" to "videoUnsupported"))
+            }
+        }
 
         private var sink: EventChannel.EventSink? = null
         private val eventChannel = EventChannel(messenger, "exo/events/$id")
@@ -140,9 +153,7 @@ class ExoPlayerPlugin(
         }
 
         init {
-            val st = textureEntry.surfaceTexture()
-            surface = Surface(st)
-            player.setVideoSurface(surface)
+            player.setVideoSurface(surfaceProducer.surface)
             player.addListener(this)
             eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(args: Any?, events: EventChannel.EventSink?) {
@@ -280,6 +291,12 @@ class ExoPlayerPlugin(
                 .setUri(Uri.parse(if (path.startsWith("/")) "file://$path" else path))
                 .setSubtitleConfigurations(externalSubs)
                 .build()
+            // Reset the render watchdog for the new item and re-attach the
+            // surface (it can be recreated by Impeller between items).
+            firstFrameRendered = false
+            hasVideoTrack = false
+            main.removeCallbacks(videoWatchdog)
+            player.setVideoSurface(surfaceProducer.surface)
             player.setMediaItem(item, startMs)
             player.playWhenReady = play
             player.prepare()
@@ -362,7 +379,16 @@ class ExoPlayerPlugin(
         }
 
         override fun onVideoSizeChanged(size: VideoSize) {
+            // Size the producer to the real frame so the texture renders crisply.
+            if (size.width > 0 && size.height > 0) {
+                surfaceProducer.setSize(size.width, size.height)
+            }
             send(mapOf("event" to "videoSize", "width" to size.width, "height" to size.height))
+        }
+
+        override fun onRenderedFirstFrame() {
+            firstFrameRendered = true
+            main.removeCallbacks(videoWatchdog)
         }
 
         override fun onPlaybackParametersChanged(params: PlaybackParameters) {
@@ -380,6 +406,19 @@ class ExoPlayerPlugin(
 
         override fun onTracksChanged(tracks: Tracks) {
             send(buildTracksEvent(tracks))
+            hasVideoTrack = tracks.containsType(C.TRACK_TYPE_VIDEO)
+            // Fast path: the device has no decoder for this video track at all
+            // (e.g. 10-bit HEVC Main 10 on an 8-bit-only decoder) — fall back now.
+            if (hasVideoTrack && !tracks.isTypeSupported(C.TRACK_TYPE_VIDEO)) {
+                send(mapOf("event" to "videoUnsupported"))
+                return
+            }
+            // Slow path: a decoder claims support but may still never produce a
+            // frame. Arm a watchdog — if no frame renders shortly, fall back.
+            if (hasVideoTrack && !firstFrameRendered) {
+                main.removeCallbacks(videoWatchdog)
+                main.postDelayed(videoWatchdog, 2500)
+            }
         }
 
         private fun buildTracksEvent(tracks: Tracks): Map<String, Any?> {
@@ -427,10 +466,10 @@ class ExoPlayerPlugin(
 
         fun release() {
             main.removeCallbacks(ticker)
+            main.removeCallbacks(videoWatchdog)
             try { player.removeListener(this) } catch (_: Exception) {}
             try { player.release() } catch (_: Exception) {}
-            try { surface.release() } catch (_: Exception) {}
-            try { textureEntry.release() } catch (_: Exception) {}
+            try { surfaceProducer.release() } catch (_: Exception) {}
             eventChannel.setStreamHandler(null)
             sink = null
         }

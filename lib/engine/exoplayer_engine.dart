@@ -40,6 +40,7 @@ class ExoPlayerEngine implements PlayerEngine {
   final _videoSize = StreamController<VideoSize>.broadcast();
   final _completed = StreamController<void>.broadcast();
   final _error = StreamController<String>.broadcast();
+  final _videoUnsupported = StreamController<void>.broadcast();
   final _cues = StreamController<String>.broadcast();
   final _texture = StreamController<int?>.broadcast();
 
@@ -84,6 +85,8 @@ class ExoPlayerEngine implements PlayerEngine {
         _completed.add(null);
       case 'error':
         _error.add(event['message'] as String? ?? 'Playback error');
+      case 'videoUnsupported':
+        _videoUnsupported.add(null);
       case 'cues':
         _cues.add(event['text'] as String? ?? '');
       case 'tracks':
@@ -126,6 +129,8 @@ class ExoPlayerEngine implements PlayerEngine {
   Stream<TrackSnapshot> get tracksStream => _tracks.stream;
   @override
   Stream<VideoSize> get videoSizeStream => _videoSize.stream;
+  @override
+  Stream<void> get videoUnsupportedStream => _videoUnsupported.stream;
   @override
   Stream<void> get completedStream => _completed.stream;
   @override
@@ -207,6 +212,7 @@ class ExoPlayerEngine implements PlayerEngine {
     _videoSize.close();
     _completed.close();
     _error.close();
+    _videoUnsupported.close();
     _cues.close();
     _texture.close();
   }

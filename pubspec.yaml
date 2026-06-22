@@ -16,7 +16,14 @@ dependencies:
 
   # Video playback is provided by a custom native Media3/ExoPlayer layer
   # (android/.../ExoPlayer*.kt) bridged via platform channels + a platform view.
-  # No Dart video package is used.
+  #
+  # Software-decoder fallback: media_kit (libmpv + FFmpeg) plays files whose
+  # codec the device's MediaCodec can't handle (e.g. some 10-bit HEVC). Used
+  # ONLY when the ExoPlayer engine reports a fatal decode error — see
+  # MediaKitEngine + PlayerNotifier._fallbackToSoftware.
+  media_kit: ^1.1.11
+  media_kit_video: ^1.2.5
+  media_kit_libs_video: ^1.0.5
 
   # File picking
   file_picker: ^8.0.3

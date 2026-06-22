@@ -6,6 +6,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../engine/player_engine.dart';
 import '../../engine/exoplayer_engine.dart';
+import '../../engine/media_kit_engine.dart';
 import '../../models/video_file.dart';
 import '../../services/brightness_service.dart';
 import '../../services/duration_cache_service.dart';
@@ -158,6 +159,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
   String? _currentArtPath;
 
   bool _hasStartedPlaying = false;
+  // True once we've switched the current file to the software (media_kit) engine
+  // because ExoPlayer couldn't decode it. Guards against a fallback loop.
+  bool _usingFallback = false;
   final List<StreamSubscription> _subs = [];
 
   // Single ScreenBrightness instance — avoids creating a new object every call.
@@ -197,6 +201,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _audioMode = false;
     _leftScreen = false;
     _hasStartedPlaying = false;
+    _usingFallback = false;
 
     final prefsFuture = Future.wait([
       PlayerPreferencesService.instance.loadFitModeIndex(),     // [0]
@@ -292,6 +297,59 @@ class PlayerNotifier extends Notifier<PlayerState> {
     WakelockPlus.enable(); // fire-and-forget — never gated the first frame
   }
 
+  // ── Software-decoder fallback ────────────────────────────────────────────────
+
+  /// Swaps the failed ExoPlayer engine for the media_kit (libmpv/FFmpeg) engine
+  /// and reopens the current file at the same position. Triggered when ExoPlayer
+  /// reports a fatal error — typically a codec the device's MediaCodec can't
+  /// decode (e.g. 10-bit HEVC). media_kit decodes in software, like VLC.
+  Future<void> _fallbackToSoftware() async {
+    if (_usingFallback || _isDisposing) return;
+    final path = _currentPath;
+    if (path == null) return;
+    _usingFallback = true;
+    _hasStartedPlaying = false;
+    final resumeAt = state.position;
+
+    // Tear down the ExoPlayer engine + its stream subscriptions and texture.
+    _disposeStreams();
+    _textureSub?.cancel();
+    _textureSub = null;
+    final old = _engine;
+    _engine = null;
+    try { await old?.dispose(); } catch (_) {}
+
+    // Back to "loading" while the software engine prepares (clears the error).
+    state = state.copyWith(
+      isInitialized: false,
+      hasError: false,
+      errorMessage: null,
+      textureId: null,
+    );
+
+    final engine = MediaKitEngine();
+    _engine = engine;
+    state = state.copyWith(textureId: engine.textureId);
+    _textureSub = engine.textureIdStream.listen((id) {
+      if (!_isDisposing) state = state.copyWith(textureId: id);
+    });
+
+    _listenStreams(engine, onReady: () {
+      state = state.copyWith(isInitialized: true);
+      _startHideTimer();
+      _syncMediaSessionMetadata();
+    });
+
+    await engine.setVolume(100);
+    await engine.setRate(state.playbackSpeed);
+    await engine.setRepeatMode(state.loopMode.repeatCode);
+    await engine.open(
+      path,
+      start: resumeAt > Duration.zero ? resumeAt : null,
+      play: true,
+    );
+  }
+
   // ── Stream listeners ───────────────────────────────────────────────────────
 
   void _listenStreams(PlayerEngine engine, {required VoidCallback onReady}) {
@@ -339,7 +397,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }));
 
     _subs.add(engine.rateStream.listen((v) {
-      state = state.copyWith(playbackSpeed: v);
+      // The engine reports the rate as a float, so a clean 1.2 comes back as
+      // 1.2000000476…; snap to 2 decimals so the readouts don't show a long tail.
+      final clean = (v * 100).roundToDouble() / 100;
+      state = state.copyWith(playbackSpeed: clean);
       _syncMediaSessionPlaybackState();
     }));
 
@@ -388,12 +449,29 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }));
 
     _subs.add(engine.errorStream.listen((error) {
-      if (!_isDisposing && error.isNotEmpty) {
-        state = state.copyWith(
-          hasError: true,
-          errorMessage: error,
-          isInitialized: true,
-        );
+      if (_isDisposing || error.isEmpty) return;
+      // If ExoPlayer (device MediaCodec) can't decode this file, retry it once
+      // on the software (libmpv/FFmpeg) engine before showing an error — this is
+      // what lets 10-bit HEVC and other codecs VLC plays work here too.
+      if (!_usingFallback && _engine is ExoPlayerEngine) {
+        _fallbackToSoftware();
+        return;
+      }
+      state = state.copyWith(
+        hasError: true,
+        errorMessage: error,
+        isInitialized: true,
+      );
+    }));
+
+    // ExoPlayer often does NOT error on an undecodable video track — it just
+    // plays the audio and silently drops the picture. This fires when the file
+    // has a video track the device can't decode, so we fall back to software
+    // (media_kit) instead of leaving the user with sound and a black screen.
+    _subs.add(engine.videoUnsupportedStream.listen((_) {
+      if (_isDisposing) return;
+      if (!_usingFallback && _engine is ExoPlayerEngine) {
+        _fallbackToSoftware();
       }
     }));
 

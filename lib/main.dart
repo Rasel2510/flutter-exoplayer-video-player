@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
 import 'app.dart';
 import 'services/player_preferences_service.dart';
 import 'services/volume_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialise the libmpv/FFmpeg backend used as the software-decoder fallback
+  // for files the device's MediaCodec can't decode (see MediaKitEngine).
+  MediaKit.ensureInitialized();
   VolumeService.instance;
   // Warm persisted prefs (scan mode) before the first frame so the saved
   // library scan mode is applied immediately instead of flashing the default.

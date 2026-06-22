@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import '../engine/media_kit_engine.dart';
 import '../models/video_file.dart';
 import '../services/thumbnail_service.dart';
 import '../presentation/providers/player_provider.dart';
@@ -362,20 +364,32 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     return _LoadingPoster(videoPath: path);
                   }
 
-                  // The native ExoPlayer renders into this Flutter texture.
-                  // BoxFit is applied by sizing the texture to the video's
-                  // intrinsic aspect ratio inside a FittedBox.
-                  final w = videoWidth > 0 ? videoWidth.toDouble() : 16.0;
-                  final h = videoHeight > 0 ? videoHeight.toDouble() : 9.0;
-                  Widget video = FittedBox(
-                    fit: _boxFit(fitMode),
-                    clipBehavior: Clip.hardEdge,
-                    child: SizedBox(
-                      width: w,
-                      height: h,
-                      child: Texture(textureId: textureId),
-                    ),
-                  );
+                  // Render each engine with its proper widget: the software
+                  // (media_kit) engine MUST use media_kit's own Video widget —
+                  // its Android texture isn't displayable via a raw Texture.
+                  // ExoPlayer renders into a Flutter texture; BoxFit is applied by
+                  // sizing it to the video's intrinsic aspect ratio in a FittedBox.
+                  final engine = ref.read(playerProvider.notifier).engine;
+                  Widget video;
+                  if (engine is MediaKitEngine) {
+                    video = Video(
+                      controller: engine.controller,
+                      controls: NoVideoControls,
+                      fit: _boxFit(fitMode),
+                    );
+                  } else {
+                    final w = videoWidth > 0 ? videoWidth.toDouble() : 16.0;
+                    final h = videoHeight > 0 ? videoHeight.toDouble() : 9.0;
+                    video = FittedBox(
+                      fit: _boxFit(fitMode),
+                      clipBehavior: Clip.hardEdge,
+                      child: SizedBox(
+                        width: w,
+                        height: h,
+                        child: Texture(textureId: textureId),
+                      ),
+                    );
+                  }
                   if (zoomScale != 1.0) {
                     video = Transform.scale(scale: zoomScale, child: video);
                   }

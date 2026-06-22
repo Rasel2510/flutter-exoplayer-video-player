@@ -51,11 +51,16 @@ class _TopBar extends ConsumerWidget {
               : (s.abRepeatEnd == null ? 1 : 2),
         )));
 
-    // Avoid allocating a new string on every build when speed hasn't changed.
-    // The select above already prevents rebuild unless speed changes, so this
-    // is just defensive clarity.
-    final speedLabel =
-        speed == speed.roundToDouble() ? '${speed.toInt()}×' : '$speed×';
+    // Clean speed label: whole numbers as "2×", otherwise up to 2 decimals with
+    // any trailing zero trimmed ("1.2×", "1.25×") — never a float tail.
+    final String speedLabel;
+    if (speed == speed.roundToDouble()) {
+      speedLabel = '${speed.toInt()}×';
+    } else {
+      var s = speed.toStringAsFixed(2);
+      if (s.endsWith('0')) s = s.substring(0, s.length - 1);
+      speedLabel = '$s×';
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 8, 18, 0),

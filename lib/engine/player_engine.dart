@@ -67,6 +67,12 @@ abstract class PlayerEngine {
   /// Fires with a human-readable message when playback errors.
   Stream<String> get errorStream;
 
+  /// Fires when the file HAS a video track the engine can't decode (so it would
+  /// otherwise play audio with no picture). Lets the app fall back to a software
+  /// engine. ExoPlayer emits this for codecs its MediaCodec can't handle (e.g.
+  /// some 10-bit HEVC); the software engine never fires it.
+  Stream<void> get videoUnsupportedStream;
+
   /// The active subtitle cue text ('' when none), for rendering as a styled
   /// Flutter overlay (keeps full control over subtitle appearance).
   Stream<String> get cuesStream;
