@@ -376,6 +376,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       controller: engine.controller,
                       controls: NoVideoControls,
                       fit: _boxFit(fitMode),
+                      // The app renders subtitles itself (styled _SubtitleOverlay
+                      // fed by cuesStream). Hide media_kit's own SubtitleView or
+                      // every cue shows twice.
+                      subtitleViewConfiguration:
+                          const SubtitleViewConfiguration(visible: false),
                     );
                   } else {
                     final w = videoWidth > 0 ? videoWidth.toDouble() : 16.0;

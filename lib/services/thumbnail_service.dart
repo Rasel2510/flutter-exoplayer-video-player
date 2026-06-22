@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../core/utils/cache_key.dart';
 import 'media_store_service.dart';
+import 'software_probe_service.dart';
 
 /// Generates and caches video thumbnails to disk.
 ///
@@ -94,6 +95,14 @@ class ThumbnailService {
         maxWidth: 240,
         quality: 72,
       );
+
+      // Last resort: both the system thumbnail and MediaMetadataRetriever frame
+      // extraction failed (e.g. an HEVC the device can't decode in hardware).
+      // Decode one frame in software via libmpv — same path that lets the
+      // player itself show these videos.
+      if (bytes == null || bytes.isEmpty) {
+        bytes = await SoftwareProbeService.instance.grabThumbnail(videoPath);
+      }
 
       if (bytes == null || bytes.isEmpty) {
         _resolved[videoPath] = null;

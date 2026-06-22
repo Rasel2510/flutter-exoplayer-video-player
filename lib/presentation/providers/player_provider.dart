@@ -189,6 +189,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
   PlayerEngine? get engine => _engine;
   int? get textureId => _engine?.textureId;
 
+  // The position the current file should resume from. Kept so the software
+  // fallback can resume correctly even if ExoPlayer failed before it ever
+  // reported a position (state.position would still be 0 in that case).
+  Duration? _resumeTarget;
+
   // ── Init ─────────────────────────────────────────────────────────────────────
 
   Future<void> init(
@@ -252,6 +257,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // resume point instead of playing from 0 then seeking.
     final startAt =
         (resumeFrom != null && resumeFrom > Duration.zero) ? resumeFrom : null;
+    _resumeTarget = startAt;
     final openFuture = engine.open(filePath, start: startAt, play: false);
 
     final results = await prefsFuture;
@@ -309,7 +315,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (path == null) return;
     _usingFallback = true;
     _hasStartedPlaying = false;
-    final resumeAt = state.position;
+    // Prefer how far we actually got; but if ExoPlayer stalled on the bad video
+    // decoder and never reported a position, fall back to the original resume
+    // target so resuming an HEVC video still lands at the right spot.
+    final resumeAt = state.position > Duration.zero
+        ? state.position
+        : (_resumeTarget ?? Duration.zero);
 
     // Tear down the ExoPlayer engine + its stream subscriptions and texture.
     _disposeStreams();
@@ -597,6 +608,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _currentPath = filePath;
     _currentArtPath = null;
     _hasStartedPlaying = false;
+    // Next/previous start from the beginning — clear the resume target so a
+    // software fallback for this file doesn't jump to the previous file's spot.
+    _resumeTarget = null;
 
     state = state.copyWith(
       currentIndex: index,

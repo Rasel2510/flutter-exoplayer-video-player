@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/utils/cache_key.dart';
 import '../engine/exoplayer_engine.dart';
 import '../models/video_file.dart';
+import 'software_probe_service.dart';
 
 /// Probes and caches video duration via the native MediaMetadataRetriever.
 ///
@@ -139,7 +140,11 @@ class DurationCacheService {
       // Native MediaMetadataRetriever read — reads only the container header,
       // never opening a decoder or audio output, so it can't contend with
       // playback the way the media_kit Player probe could.
-      final result = await ExoPlayerEngine.probe(videoPath);
+      var result = await ExoPlayerEngine.probe(videoPath);
+      // Fallback: some files (e.g. certain HEVC) can't be opened by
+      // MediaMetadataRetriever at all, so it returns null. Read the duration in
+      // software via libmpv, which demuxes the container regardless of codec.
+      result ??= await SoftwareProbeService.instance.probeDuration(videoPath);
       if (result != null && result > Duration.zero) {
         _memCache[videoPath] = result;
         await _cache(videoPath, result);
