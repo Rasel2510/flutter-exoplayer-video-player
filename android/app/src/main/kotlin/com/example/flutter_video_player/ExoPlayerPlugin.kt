@@ -16,6 +16,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.text.CueGroup
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import io.flutter.plugin.common.BinaryMessenger
@@ -107,7 +108,15 @@ class ExoPlayerPlugin(
         private val main: Handler,
     ) : Player.Listener {
 
-        private val player: ExoPlayer = ExoPlayer.Builder(context).build()
+        // Enable decoder fallback so a clip whose preferred (hardware) decoder
+        // fails to initialise — e.g. 10-bit HEVC Main 10 on a device whose HW
+        // decoder is 8-bit only — automatically retries on another decoder
+        // (typically the software c2.android.hevc.decoder) instead of erroring
+        // out with "MediaCodecVideoRenderer error".
+        private val player: ExoPlayer = ExoPlayer.Builder(
+            context,
+            DefaultRenderersFactory(context).setEnableDecoderFallback(true),
+        ).build()
         private val textureEntry = textures.createSurfaceTexture()
         val textureId: Long = textureEntry.id()
         private val surface: Surface
