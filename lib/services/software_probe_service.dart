@@ -90,7 +90,14 @@ class SoftwareProbeService {
           : Duration.zero;
       await player.seek(at);
       await Future<void>.delayed(const Duration(milliseconds: 600));
-      return await player.screenshot(format: 'image/jpeg');
+      var shot = await player.screenshot(format: 'image/jpeg');
+      if (shot == null || shot.isEmpty) {
+        // Slow software decodes (large 10-bit HEVC) may not have landed on the
+        // seeked frame yet — give it one more beat before giving up.
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+        shot = await player.screenshot(format: 'image/jpeg');
+      }
+      return shot;
     } catch (_) {
       return null;
     } finally {

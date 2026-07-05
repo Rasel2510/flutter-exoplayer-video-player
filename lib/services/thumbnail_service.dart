@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -22,10 +23,32 @@ class ThumbnailService {
   static final ThumbnailService instance = ThumbnailService._();
 
   // ── In-memory resolved cache ──────────────────────────────────────────────
-  // Maps videoPath → resolved File (or null for known-failed paths).
-  // Populated after first successful disk lookup or generation.
-  // Subsequent calls return immediately without any async work.
-  final Map<String, File?> _resolved = {};
+  // Maps videoPath → resolved File. Populated after first successful disk
+  // lookup or generation. Subsequent calls return immediately without any
+  // async work. Successes only — failures live in _failures with a cooldown.
+  final Map<String, File> _resolved = {};
+
+  // ── Failure tracking ──────────────────────────────────────────────────────
+  // A failed generation is retried after a cooldown instead of being cached as
+  // a permanent null: the software probe can lose a one-off race (e.g. time
+  // out while the same file is busy playing in the fallback engine), and one
+  // lost race shouldn't blank that video's thumbnail for the whole session.
+  static const Duration _kRetryCooldown = Duration(seconds: 45);
+  static const int _kMaxAttempts = 4;
+  final Map<String, ({int attempts, DateTime lastTry})> _failures = {};
+
+  bool _failureBlocked(String videoPath) {
+    final f = _failures[videoPath];
+    if (f == null) return false;
+    if (f.attempts >= _kMaxAttempts) return true;
+    return DateTime.now().difference(f.lastTry) < _kRetryCooldown;
+  }
+
+  void _recordFailure(String videoPath) {
+    final f = _failures[videoPath];
+    _failures[videoPath] =
+        (attempts: (f?.attempts ?? 0) + 1, lastTry: DateTime.now());
+  }
 
   // ── Concurrency semaphore ─────────────────────────────────────────────────
   static const int _kMaxConcurrent = 6;
@@ -65,9 +88,10 @@ class ThumbnailService {
 
   Future<File?> getThumbnail(String videoPath) {
     // Fast path: already resolved this session — return immediately.
-    if (_resolved.containsKey(videoPath)) {
-      return Future.value(_resolved[videoPath]);
-    }
+    final resolved = _resolved[videoPath];
+    if (resolved != null) return Future.value(resolved);
+    // Known-failed and still inside the cooldown (or out of attempts).
+    if (_failureBlocked(videoPath)) return Future.value(null);
     return _inFlight.putIfAbsent(videoPath, () => _generate(videoPath));
   }
 
@@ -86,34 +110,48 @@ class ThumbnailService {
       // Returns null for .nomedia videos (WhatsApp) → falls through to extract.
       var bytes = await MediaStoreService.thumbnailBytes(videoPath, 240, 240);
 
-      bytes ??= await VideoThumbnail.thumbnailData(
-        video: videoPath,
-        imageFormat: ImageFormat.JPEG,
-        // FIX #THUMB-FAST: 1 s instead of 3 s — most videos have a valid
-        // frame at 1 s, cutting extraction latency by ~2/3 on cold start.
-        timeMs: 1000,
-        maxWidth: 240,
-        quality: 72,
-      );
+      if (bytes == null || bytes.isEmpty) {
+        try {
+          bytes = await VideoThumbnail.thumbnailData(
+            video: videoPath,
+            imageFormat: ImageFormat.JPEG,
+            // FIX #THUMB-FAST: 1 s instead of 3 s — most videos have a valid
+            // frame at 1 s, cutting extraction latency by ~2/3 on cold start.
+            timeMs: 1000,
+            maxWidth: 240,
+            quality: 72,
+          );
+        } catch (_) {
+          // MediaMetadataRetriever THROWS (rather than returning null) for
+          // codecs it can't decode — e.g. 10-bit HEVC. Must fall through to
+          // the software probe below, not abort the whole waterfall.
+          bytes = null;
+        }
+      }
 
       // Last resort: both the system thumbnail and MediaMetadataRetriever frame
       // extraction failed (e.g. an HEVC the device can't decode in hardware).
       // Decode one frame in software via libmpv — same path that lets the
       // player itself show these videos.
       if (bytes == null || bytes.isEmpty) {
-        bytes = await SoftwareProbeService.instance.grabThumbnail(videoPath);
+        try {
+          bytes = await SoftwareProbeService.instance.grabThumbnail(videoPath);
+        } catch (_) {
+          bytes = null;
+        }
       }
 
       if (bytes == null || bytes.isEmpty) {
-        _resolved[videoPath] = null;
+        _recordFailure(videoPath);
         return null;
       }
 
       await cacheFile.writeAsBytes(bytes, flush: true);
       _resolved[videoPath] = cacheFile;
+      _failures.remove(videoPath);
       return cacheFile;
     } catch (_) {
-      _resolved[videoPath] = null;
+      _recordFailure(videoPath);
       return null;
     } finally {
       _release();
@@ -127,9 +165,38 @@ class ThumbnailService {
     return File(p.join(dir.path, '$sanitised.jpg'));
   }
 
+  /// Whether a thumbnail for [videoPath] is already available (memory or disk)
+  /// WITHOUT triggering generation.
+  Future<bool> hasCached(String videoPath) async {
+    if (_resolved.containsKey(videoPath)) return true;
+    try {
+      return await (await _cacheFileFor(videoPath)).exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Stores externally captured [bytes] as [videoPath]'s cached thumbnail —
+  /// used by the player to reuse a frame grabbed from the already-playing
+  /// software engine for files whose codec the native extractors can't decode,
+  /// instead of opening a second software decoder on the same file.
+  Future<File?> storeThumbnailBytes(String videoPath, Uint8List bytes) async {
+    if (bytes.isEmpty) return null;
+    try {
+      final cacheFile = await _cacheFileFor(videoPath);
+      await cacheFile.writeAsBytes(bytes, flush: true);
+      _resolved[videoPath] = cacheFile;
+      _failures.remove(videoPath);
+      return cacheFile;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Clears all cached thumbnails from disk and the in-memory resolved map.
   Future<void> clearCache() async {
     _resolved.clear();
+    _failures.clear();
     try {
       final dir = await _cacheDir;
       if (await dir.exists()) {
@@ -143,6 +210,7 @@ class ThumbnailService {
   /// Removes the cached thumbnail for a single video from memory and disk.
   Future<void> removeThumbnail(String videoPath) async {
     _resolved.remove(videoPath);
+    _failures.remove(videoPath);
     _inFlight.remove(videoPath);
     try {
       final cacheFile = await _cacheFileFor(videoPath);
@@ -154,6 +222,7 @@ class ThumbnailService {
   /// file is renamed on disk, so the thumbnail doesn't need to regenerate.
   Future<void> rename(String oldPath, String newPath) async {
     final resolved = _resolved.remove(oldPath);
+    _failures.remove(oldPath);
     _inFlight.remove(oldPath);
     try {
       final oldFile = await _cacheFileFor(oldPath);

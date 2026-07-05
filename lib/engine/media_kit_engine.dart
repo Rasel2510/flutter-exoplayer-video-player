@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'player_engine.dart';
@@ -222,6 +223,12 @@ class MediaKitEngine implements PlayerEngine {
     // libmpv supports a sub-delay property, but media_kit doesn't expose it on
     // every version; accepted as a no-op (matches the ExoPlayer engine).
   }
+
+  /// Captures the currently rendered video frame as JPEG bytes (null if no
+  /// frame is available yet). Lets the app reuse the software-decoded frame
+  /// for thumbnails / lock-screen art instead of opening a second software
+  /// decoder on the same file while it's playing.
+  Future<Uint8List?> screenshot() => _player.screenshot(format: 'image/jpeg');
 
   @override
   Future<Duration?> probeDuration(String path) async => null;

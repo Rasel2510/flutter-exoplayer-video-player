@@ -348,7 +348,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _listenStreams(engine, onReady: () {
       state = state.copyWith(isInitialized: true);
       _startHideTimer();
-      _syncMediaSessionMetadata();
+      // Grab the poster from THIS engine's decoded frame before syncing the
+      // media session: syncing first would send the thumbnail service probing
+      // the same file with a second software decoder while it's playing.
+      _captureFallbackArt(engine, path).whenComplete(() {
+        if (!_isDisposing) _syncMediaSessionMetadata();
+      });
     });
 
     await engine.setVolume(100);
@@ -360,6 +365,28 @@ class PlayerNotifier extends Notifier<PlayerState> {
       play: true,
     );
   }
+
+  /// Saves a frame grabbed from the playing software engine as [path]'s
+  /// thumbnail. For these files the native extractors have already failed
+  /// (that's why we're on the fallback engine), and a separate software probe
+  /// would open a second libmpv decoder on the same file — stealing CPU from
+  /// playback and usually timing out. The playing engine already has the
+  /// decoded frame for free.
+  Future<void> _captureFallbackArt(MediaKitEngine engine, String path) async {
+    try {
+      if (await ThumbnailService.instance.hasCached(path)) return;
+      for (final waitMs in const [400, 1200, 2500]) {
+        await Future<void>.delayed(Duration(milliseconds: waitMs));
+        if (_isDisposing || _engine != engine) return;
+        final shot = await engine.screenshot();
+        if (shot != null && shot.isNotEmpty) {
+          await ThumbnailService.instance.storeThumbnailBytes(path, shot);
+          return;
+        }
+      }
+    } catch (_) {}
+  }
+
 
   // ── Stream listeners ───────────────────────────────────────────────────────
 
@@ -633,7 +660,15 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _listenStreams(engine, onReady: () {
       state = state.copyWith(isInitialized: true);
       _startHideTimer();
-      _syncMediaSessionMetadata();
+      // Next/previous reuses the engine — when it's the software fallback,
+      // harvest the playing frame as this file's thumbnail too.
+      if (engine is MediaKitEngine) {
+        _captureFallbackArt(engine, filePath).whenComplete(() {
+          if (!_isDisposing) _syncMediaSessionMetadata();
+        });
+      } else {
+        _syncMediaSessionMetadata();
+      }
     });
 
     await engine.setVolume(100);
