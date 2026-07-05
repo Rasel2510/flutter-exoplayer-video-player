@@ -571,6 +571,12 @@ class _LoadingPoster extends StatelessWidget {
               fit: BoxFit.contain,
               gaplessPlayback: true,
               filterQuality: FilterQuality.low,
+              // Harvested posters can be full video resolution — cap the
+              // decode at screen width so opening a 4K HEVC doesn't spike a
+              // huge bitmap decode right as the decoder is warming up.
+              cacheWidth: (MediaQuery.sizeOf(context).width *
+                      MediaQuery.devicePixelRatioOf(context))
+                  .round(),
             );
           },
         ),

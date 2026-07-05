@@ -126,9 +126,13 @@ Future<bool> _hasNewContent() async {
     await Isolate.spawn(
       _isolateQuickCheck,
       _QuickCheckData(roots, oldSnapshot, port.sendPort),
+      // A killed isolate still delivers onExit's null, so port.first can't
+      // hang forever waiting on a result that will never come.
+      onExit: port.sendPort,
     );
-    final changed = await port.first as bool;
-    return changed;
+    final first = await port.first;
+    // Non-bool means the isolate died without answering — rescan to be safe.
+    return first is bool ? first : true;
   } catch (_) {
     return true;
   }
@@ -145,8 +149,18 @@ class _QuickCheckData {
 
 void _isolateQuickCheck(_QuickCheckData data) {
   try {
+    final seen = <String>{};
     for (final root in data.roots) {
-      _quickScanSync(Directory(root), data.snapshot);
+      _quickScanSync(Directory(root), data.snapshot, seen);
+    }
+    // Additions and count changes throw _ChangedSignal during the walk, but a
+    // folder that was deleted outright (or lost every video) is simply never
+    // visited — compare against the snapshot keys to catch deletions too.
+    for (final path in data.snapshot.keys) {
+      if (!seen.contains(path)) {
+        data.sendPort.send(true);
+        return;
+      }
     }
     data.sendPort.send(false);
   } catch (e) {
@@ -154,7 +168,8 @@ void _isolateQuickCheck(_QuickCheckData data) {
   }
 }
 
-void _quickScanSync(Directory dir, Map<String, int> snapshot) {
+void _quickScanSync(
+    Directory dir, Map<String, int> snapshot, Set<String> seen) {
   try {
     int videoCount = 0;
     final subs = <Directory>[];
@@ -169,12 +184,13 @@ void _quickScanSync(Directory dir, Map<String, int> snapshot) {
     }
 
     if (videoCount > 0) {
+      seen.add(dir.path);
       final cached = snapshot[dir.path];
       if (cached == null || cached != videoCount) throw const _ChangedSignal();
     }
 
     for (final sub in subs) {
-      _quickScanSync(sub, snapshot);
+      _quickScanSync(sub, snapshot, seen);
     }
   } on _ChangedSignal {
     rethrow;

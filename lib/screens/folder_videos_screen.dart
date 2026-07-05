@@ -201,6 +201,7 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _durationFlush?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -241,16 +242,38 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
 
     // ── Phase 2: background probe for uncached durations ──────────────────
     // Only runs for videos whose duration wasn't in the cache above.
-    // Does not block the UI — results trickle in individually.
+    // Does not block the UI — results trickle in, batched into one setState
+    // per flush window instead of one full-list rebuild per video.
     final uncached = paths.where((path) => !_durations.containsKey(path)).toList();
     if (uncached.isEmpty) return;
 
     for (final path in uncached) {
       DurationCacheService.instance.getDuration(path).then((dur) {
         if (!mounted || dur == null) return;
-        setState(() => _durations[path] = dur);
+        _queueDuration(path, dur);
       });
     }
+  }
+
+  // Coalesces trickling probe results: a folder with hundreds of uncached
+  // videos otherwise rebuilds the whole list once per video as each duration
+  // arrives.
+  final Map<String, Duration> _pendingDurations = {};
+  Timer? _durationFlush;
+
+  void _queueDuration(String path, Duration dur) {
+    _pendingDurations[path] = dur;
+    _durationFlush ??= Timer(const Duration(milliseconds: 150), () {
+      _durationFlush = null;
+      if (!mounted) return;
+      setState(() {
+        _durations.addAll(_pendingDurations);
+        _pendingDurations.clear();
+        // The duration sort ordered these videos before their lengths were
+        // known — re-sort with the real values or the order stays wrong.
+        if (_sortBy == SortOption.duration) _sortedCache = null;
+      });
+    });
   }
 
   // ── Sorted + filtered video list ──────────────────────────────────────────
@@ -368,7 +391,10 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     if (!mounted) return;
     setState(() {
       _positions[path] = pos ?? Duration.zero;
-      if (dur != null) _durations[path] = dur;
+      if (dur != null) {
+        _durations[path] = dur;
+        if (_sortBy == SortOption.duration) _sortedCache = null;
+      }
     });
   }
 

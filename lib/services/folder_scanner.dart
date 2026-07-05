@@ -14,6 +14,11 @@ class FolderScanner {
     await Isolate.spawn(
       _isolateScanFolders,
       _IsolateScanData(rootPath, receivePort.sendPort),
+      // If the isolate dies before sending its result (OOM kill, crash), these
+      // still deliver a message so the await-for below can't hang forever —
+      // which previously left the library stuck on "scanning".
+      onExit: receivePort.sendPort,
+      onError: receivePort.sendPort,
     );
 
     List<VideoFolder>? finalResult;
@@ -22,6 +27,9 @@ class FolderScanner {
         onProgress?.call(message);
       } else if (message is List<VideoFolder>) {
         finalResult = message;
+        receivePort.close();
+      } else {
+        // onExit (null) or onError payload without a result: isolate is gone.
         receivePort.close();
       }
     }

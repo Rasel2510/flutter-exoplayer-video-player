@@ -103,6 +103,11 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
           Image.file(
             _thumb!,
             fit: BoxFit.cover,
+            // Posters harvested from the playing engine are stored at full
+            // video resolution — decode at tile size (ResizeImage never
+            // upscales) so a 4K frame doesn't cost a ~30 MB bitmap per row.
+            cacheWidth:
+                (widget.width * MediaQuery.devicePixelRatioOf(context)).round(),
             errorBuilder: (_, __, ___) => _placeholder(context),
           ),
           const Center(
