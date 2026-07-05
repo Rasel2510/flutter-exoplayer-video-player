@@ -66,9 +66,6 @@ class SoftwareProbeService {
     // A controller is required for libmpv to spin up its renderer so a frame is
     // available to screenshot; force software decoding to match the codecs we
     // can't decode in hardware.
-    // Created for its side effect: spins up libmpv's renderer so a frame is
-    // available to screenshot. Disposing the player tears it down.
-    // ignore: unused_local_variable
     final controller = VideoController(
       player,
       configuration: const VideoControllerConfiguration(
@@ -78,26 +75,26 @@ class SoftwareProbeService {
     try {
       final uri = path.startsWith('/') ? 'file://$path' : path;
       await player.open(Media(uri), play: false);
-      // Wait until the video has real dimensions (i.e. a frame can be produced).
-      await player.stream.width
-          .firstWhere((w) => w != null && w > 0)
-          .timeout(const Duration(seconds: 12));
-      // Seek a little in so we don't grab a black intro frame, then give the
-      // renderer a moment to land on the seeked frame.
-      final dur = player.state.duration;
-      final at = dur > const Duration(seconds: 4)
-          ? const Duration(seconds: 2)
-          : Duration.zero;
-      await player.seek(at);
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-      var shot = await player.screenshot(format: 'image/jpeg');
-      if (shot == null || shot.isEmpty) {
-        // Slow software decodes (large 10-bit HEVC) may not have landed on the
-        // seeked frame yet — give it one more beat before giving up.
-        await Future<void>.delayed(const Duration(milliseconds: 900));
-        shot = await player.screenshot(format: 'image/jpeg');
+      // Wait until a frame has actually RENDERED — not merely until the
+      // demuxer reports dimensions. mpv's screenshot-raw reads the video
+      // output's current frame and silently returns null before the first
+      // render, and a software 10-bit HEVC decode can take many seconds to
+      // produce that first frame even though width/height arrive instantly
+      // from the demuxer.
+      await controller.waitUntilFirstFrameRendered
+          .timeout(const Duration(seconds: 20));
+      // Seek a little in so we don't grab a black intro frame.
+      if (player.state.duration > const Duration(seconds: 4)) {
+        await player.seek(const Duration(seconds: 2));
       }
-      return shot;
+      // The seeked frame lands asynchronously — poll until the renderer has
+      // one to give us instead of betting on a single fixed delay.
+      for (var attempt = 0; attempt < 8; attempt++) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        final shot = await player.screenshot(format: 'image/jpeg');
+        if (shot != null && shot.isNotEmpty) return shot;
+      }
+      return null;
     } catch (_) {
       return null;
     } finally {

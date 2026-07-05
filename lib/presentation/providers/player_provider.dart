@@ -375,7 +375,16 @@ class PlayerNotifier extends Notifier<PlayerState> {
   Future<void> _captureFallbackArt(MediaKitEngine engine, String path) async {
     try {
       if (await ThumbnailService.instance.hasCached(path)) return;
-      for (final waitMs in const [400, 1200, 2500]) {
+      // mpv's screenshot silently returns null until the video output has
+      // rendered a frame — wait for that signal first; software decodes can
+      // take several seconds to produce it.
+      try {
+        await engine.controller.waitUntilFirstFrameRendered
+            .timeout(const Duration(seconds: 10));
+      } on TimeoutException {
+        // Fall through — the polling below is the backstop.
+      }
+      for (final waitMs in const [200, 1200, 2500]) {
         await Future<void>.delayed(Duration(milliseconds: waitMs));
         if (_isDisposing || _engine != engine) return;
         final shot = await engine.screenshot();

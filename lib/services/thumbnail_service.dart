@@ -15,7 +15,7 @@ import 'software_probe_service.dart';
 /// hitting the filesystem again.
 /// FIX #THUMB-INIT: _cacheDir is eagerly initialized at construction so the
 /// first getThumbnail call doesn't pay the getTemporaryDirectory() cost.
-class ThumbnailService {
+final class ThumbnailService {
   ThumbnailService._() {
     // Eagerly kick off cache-dir init — result is memoized in _cacheDir.
     _cacheDir.ignore();
@@ -72,6 +72,14 @@ class ThumbnailService {
       _activeCount--;
     }
   }
+
+  // ── Late-arrival notifications ────────────────────────────────────────────
+  // Fired when a thumbnail becomes available for a path that may already have
+  // been reported as failed — e.g. harvested from the playing fallback engine
+  // after the library list gave up. List screens stay mounted beneath the
+  // player route, so their widgets listen to this to repaint in place.
+  final _updates = StreamController<String>.broadcast();
+  Stream<String> get updates => _updates.stream;
 
   // ── In-flight dedup ───────────────────────────────────────────────────────
   final Map<String, Future<File?>> _inFlight = {};
@@ -187,6 +195,7 @@ class ThumbnailService {
       await cacheFile.writeAsBytes(bytes, flush: true);
       _resolved[videoPath] = cacheFile;
       _failures.remove(videoPath);
+      _updates.add(videoPath);
       return cacheFile;
     } catch (_) {
       return null;

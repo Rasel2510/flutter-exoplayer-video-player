@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -40,11 +41,24 @@ class VideoThumbnailWidget extends StatefulWidget {
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   File? _thumb;
   bool _failed = false;
+  StreamSubscription<String>? _updateSub;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // A thumbnail can arrive AFTER this widget gave up — e.g. harvested from
+    // the playing fallback engine while this list sits beneath the player
+    // route. Reload in place when that happens.
+    _updateSub = ThumbnailService.instance.updates.listen((path) {
+      if (path == widget.videoPath && _thumb == null) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _updateSub?.cancel();
+    super.dispose();
   }
 
   @override
