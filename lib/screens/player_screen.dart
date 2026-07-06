@@ -627,6 +627,7 @@ class _SubtitleOverlay extends ConsumerWidget {
                 height: 1.3,
                 fontSize: style.fontSize,
                 color: style.color,
+                fontFamily: style.fontFamily,
                 fontWeight: FontWeight.bold,
                 shadows: style.background
                     ? null

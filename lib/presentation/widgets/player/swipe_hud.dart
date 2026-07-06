@@ -53,6 +53,16 @@ class SwipeHud extends StatelessWidget {
         ? '${(value * 100).round()}%'
         : '${(value * 200).round()}%';
 
+    // ── Bar fill (SwipeHud design spec) ──────────────────────────────────────
+    // 0–100 %: the fill grows 0→full (full exactly at 100 %). 100–200 %: the
+    // bar STAYS full — no climbing layer, no dimming — and the fill colour
+    // shifts accent→hot red as the boost increases, so it never feels empty.
+    final double basePct =
+        isBrightness ? value : (value * 2).clamp(0.0, 1.0);
+    final Color fillColor = isBrightness
+        ? _brightnessColor
+        : VolumeColor.barColor(value * 200, context.colors.accent);
+
     return Align(
       alignment: isBrightness ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
@@ -70,21 +80,26 @@ class SwipeHud extends StatelessWidget {
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 8),
             // ── Progress bar ──────────────────────────────────────────────
-            // Single bar whose fill colour shifts from blue (≤100 %) toward
-            // orange as the boost ratio climbs to 200 %.
+            // Single solid fill: grows to full at 100 %, then the whole bar's
+            // colour heats accent→red across the boost range (design spec).
             SizedBox(
               width: 4,
               height: 90,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(2),
-                child: RotatedBox(
-                  quarterTurns: -1,
-                  child: LinearProgressIndicator(
-                    value: value.clamp(0.0, 1.0),
-                    backgroundColor: const Color(0x2EFFFFFF),
-                    valueColor: AlwaysStoppedAnimation(color),
-                    minHeight: 4,
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const ColoredBox(color: Color(0x2EFFFFFF)),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: FractionallySizedBox(
+                        heightFactor: basePct,
+                        widthFactor: 1.0,
+                        child: ColoredBox(color: fillColor),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

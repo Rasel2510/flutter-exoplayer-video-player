@@ -42,6 +42,7 @@ class _AppearanceControl extends ConsumerWidget {
                   height: 1.4,
                   fontSize: style.fontSize,
                   color: style.color,
+                  fontFamily: style.fontFamily,
                   fontWeight: FontWeight.bold,
                   backgroundColor: style.background
                       ? style.backgroundColor
@@ -88,6 +89,62 @@ class _AppearanceControl extends ConsumerWidget {
                 onTap: () => notifier.adjustFontSize(4),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.text_fields_rounded,
+                  color: context.colors.textMuted, size: 18),
+              const SizedBox(width: 14),
+              Text('Font',
+                  style: TextStyle(
+                      color: context.colors.textSecondary, fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Each chip renders its label in its own family — a live preview.
+          SizedBox(
+            height: 38,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: subtitleFontPresets.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final preset = subtitleFontPresets[i];
+                final selected = style.fontIndex == i;
+                return GestureDetector(
+                  onTap: () => notifier.setFontIndex(i),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? context.colors.accentSoft
+                          : context.colors.elevated,
+                      borderRadius: BorderRadius.circular(19),
+                      border: Border.all(
+                        color: selected
+                            ? context.colors.accent
+                            : context.colors.border,
+                        width: selected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      preset.label,
+                      style: TextStyle(
+                        fontFamily: preset.family,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? context.colors.accent
+                            : context.colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
           Row(

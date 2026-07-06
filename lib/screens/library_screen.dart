@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import '../core/theme/app_theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/video_file.dart';
 import '../models/video_folder.dart';
 import '../presentation/providers/folders_provider.dart';
+import '../services/duration_cache_service.dart';
 import '../services/position_service.dart';
 import '../services/recent_files_service.dart';
 import 'folder_videos_screen.dart';
+import '../presentation/widgets/library/continue_watching_row.dart';
 import '../presentation/widgets/library/empty_library.dart';
 import '../presentation/widgets/library/folder_card.dart';
 import '../presentation/widgets/library/library_header.dart';
@@ -50,6 +53,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   final Map<String, _FolderResume?> _folderResumes = {};
 
+  // "Continue Watching" strip data: recents joined with saved resume points.
+  List<ContinueWatchingItem> _continueWatching = const [];
+
   @override
   bool get wantKeepAlive => true;
 
@@ -84,6 +90,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     if (lifecycle != AppLifecycleState.resumed) return;
     if (_permissionGranted) {
       ref.read(foldersProvider.notifier).load(forceScan: false);
+      _loadContinueWatching();
     } else if (_awaitingStorageSettings) {
       _awaitingStorageSettings = false;
       _recheckPermissionsAfterSettings();
@@ -104,6 +111,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         _checkingPermission = false;
       });
       ref.read(foldersProvider.notifier).load(forceScan: false);
+      _loadContinueWatching();
       return;
     }
     setState(() => _checkingPermission = true);
@@ -137,6 +145,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       // so there is no valid cache yet. Scan immediately instead of waiting
       // for the background snapshot check to figure that out.
       ref.read(foldersProvider.notifier).load(forceScan: true);
+      _loadContinueWatching();
     }
   }
 
@@ -152,7 +161,103 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       _permissionGranted = granted;
       _checkingPermission = false;
     });
-    if (granted) ref.read(foldersProvider.notifier).load(forceScan: false);
+    if (granted) {
+      ref.read(foldersProvider.notifier).load(forceScan: false);
+      _loadContinueWatching();
+    }
+  }
+
+  // ── Continue Watching ──────────────────────────────────────────────────────
+
+  /// Joins the recents list with saved resume points. Finished videos drop off
+  /// automatically: PositionService clears the position near the end, so their
+  /// load() returns null and they're skipped here.
+  Future<void> _loadContinueWatching() async {
+    final recents = await RecentFilesService.instance.getRecents();
+    final items = <ContinueWatchingItem>[];
+    for (final vf in recents) {
+      final pos = await PositionService.instance.load(vf.path);
+      if (pos == null || pos <= Duration.zero) continue;
+      final dur = vf.duration ??
+          DurationCacheService.instance.getFromCacheSync(vf.path);
+      items.add(
+          ContinueWatchingItem(video: vf, position: pos, duration: dur));
+      if (items.length >= 10) break;
+    }
+    if (!mounted) return;
+    setState(() => _continueWatching = items);
+  }
+
+  /// Resumes a Continue Watching entry directly (no resume dialog). The
+  /// video's folder — when it's in the library — becomes the playlist so
+  /// next/previous and auto-play-next work as usual.
+  Future<void> _openContinueWatching(ContinueWatchingItem item) async {
+    final folders = ref.read(foldersProvider).folders;
+    final dir = p.dirname(item.video.path);
+    VideoFolder? folder;
+    for (final f in folders) {
+      if (f.path == dir) {
+        folder = f;
+        break;
+      }
+    }
+    final playlist = folder?.videos ?? const <VideoFile>[];
+    var index = -1;
+    for (var i = 0; i < playlist.length; i++) {
+      if (playlist[i].path == item.video.path) {
+        index = i;
+        break;
+      }
+    }
+
+    await RecentFilesService.instance.addRecent(item.video); // bump to front
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      SmoothPageRoute(
+        child: PlayerScreen(
+          filePath: item.video.path,
+          fileName: item.video.name,
+          resumeFrom: item.position,
+          folderVideos: playlist,
+          initialIndex: index,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    _loadContinueWatching();
+    // The folder's resume pill may be stale now — drop it so the lazy loader
+    // refetches it on the next build.
+    if (folder != null) {
+      setState(() => _folderResumes.remove(folder!.path));
+    }
+  }
+
+  Future<void> _confirmRemoveContinueWatching(
+      ContinueWatchingItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remove from Continue Watching?'),
+        content: Text(
+          '"${item.video.name}" will be removed from the row. The video and '
+          'its resume point are kept.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await RecentFilesService.instance.removeRecent(item.video.path);
+    _loadContinueWatching();
   }
 
   // ── Folder resume helpers ──────────────────────────────────────────────────
@@ -201,6 +306,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         _findLastWatched(folder).then((r) {
           if (mounted) setState(() => _folderResumes[folder.path] = r);
         });
+        _loadContinueWatching();
       }
     });
   }
@@ -225,6 +331,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       _findLastWatched(folder).then((r) {
         if (mounted) setState(() => _folderResumes[folder.path] = r);
       });
+      _loadContinueWatching();
     }
   }
 
@@ -327,6 +434,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final totalResults = displayFolders.length +
         (showVideoHeader ? 1 : 0) +
         matchedVideos.length;
+    // Continue Watching strip: only outside of search, as the first list item.
+    final showContinueWatching =
+        _searchQuery.isEmpty && _continueWatching.isNotEmpty;
+    final cwCount = showContinueWatching ? 1 : 0;
 
     return Column(
       children: [
@@ -361,10 +472,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       16,
                       8 + MediaQuery.of(context).padding.bottom,
                     ),
-                    itemCount: totalResults,
+                    itemCount: totalResults + cwCount,
                     itemBuilder: (_, i) {
-                      if (i < displayFolders.length) {
-                        final folder     = displayFolders[i];
+                      if (showContinueWatching && i == 0) {
+                        return ContinueWatchingRow(
+                          items: _continueWatching,
+                          onTap: _openContinueWatching,
+                          onRemove: _confirmRemoveContinueWatching,
+                        );
+                      }
+                      final j = i - cwCount;
+                      if (j < displayFolders.length) {
+                        final folder     = displayFolders[j];
                         // FIX #OPT-6: trigger resume load the first time this
                         // item scrolls into view rather than loading all at once.
                         _ensureResumeLoaded(folder);
@@ -385,7 +504,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         );
                       }
 
-                      var idx = i - displayFolders.length;
+                      var idx = j - displayFolders.length;
                       if (showVideoHeader) {
                         if (idx == 0) {
                           return Padding(

@@ -23,17 +23,31 @@ const subtitleBgColorPresets = <Color>[
   Color(0xAA9C27B0), // Purple
 ];
 
+/// Preset subtitle fonts. These are Android's built-in generic font families,
+/// so they need no bundled assets and work offline on every device. The index
+/// is what gets persisted — append new fonts, never insert.
+const subtitleFontPresets = <({String label, String? family})>[
+  (label: 'Default', family: null),
+  (label: 'Serif', family: 'serif'),
+  (label: 'Mono', family: 'monospace'),
+  (label: 'Condensed', family: 'sans-serif-condensed'),
+  (label: 'Light', family: 'sans-serif-light'),
+  (label: 'Cursive', family: 'cursive'),
+];
+
 class SubtitleStyle {
   final double fontSize;
   final int colorIndex;
   final bool background;
   final int backgroundColorIndex;
+  final int fontIndex;
 
   const SubtitleStyle({
     this.fontSize = 32.0,
     this.colorIndex = 0,
     this.background = true,
     this.backgroundColorIndex = 0,
+    this.fontIndex = 0,
   });
 
   Color get color =>
@@ -42,17 +56,24 @@ class SubtitleStyle {
   Color get backgroundColor =>
       subtitleBgColorPresets[backgroundColorIndex.clamp(0, subtitleBgColorPresets.length - 1)];
 
+  /// Font family for the subtitle text; null = the app's default font.
+  String? get fontFamily =>
+      subtitleFontPresets[fontIndex.clamp(0, subtitleFontPresets.length - 1)]
+          .family;
+
   SubtitleStyle copyWith({
     double? fontSize,
     int? colorIndex,
     bool? background,
     int? backgroundColorIndex,
+    int? fontIndex,
   }) =>
       SubtitleStyle(
         fontSize: fontSize ?? this.fontSize,
         colorIndex: colorIndex ?? this.colorIndex,
         background: background ?? this.background,
         backgroundColorIndex: backgroundColorIndex ?? this.backgroundColorIndex,
+        fontIndex: fontIndex ?? this.fontIndex,
       );
 }
 
@@ -73,6 +94,7 @@ class SubtitleStyleNotifier extends StateNotifier<SubtitleStyle> {
       colorIndex: prefs.subtitleColorIndexCached,
       background: prefs.subtitleBackgroundCached,
       backgroundColorIndex: prefs.subtitleBgColorIndexCached,
+      fontIndex: prefs.subtitleFontIndexCached,
     );
   }
 
@@ -98,5 +120,10 @@ class SubtitleStyleNotifier extends StateNotifier<SubtitleStyle> {
   void setBackgroundColorIndex(int index) {
     state = state.copyWith(backgroundColorIndex: index);
     PlayerPreferencesService.instance.saveSubtitleBgColorIndex(index);
+  }
+
+  void setFontIndex(int index) {
+    state = state.copyWith(fontIndex: index);
+    PlayerPreferencesService.instance.saveSubtitleFontIndex(index);
   }
 }

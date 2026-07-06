@@ -104,7 +104,11 @@ class _VolumeSheetState extends State<VolumeSheet> {
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: accent,
+                    // Same rule as the swipe HUD bar: one solid fill that is
+                    // accent through 100 %, then the whole track heats toward
+                    // red across the boost range (design spec).
+                    activeTrackColor:
+                        VolumeColor.barColor(_volume, context.colors.accent),
                     inactiveTrackColor: context.colors.textDim,
                     thumbColor: accent,
                     overlayColor: accentSoft,
