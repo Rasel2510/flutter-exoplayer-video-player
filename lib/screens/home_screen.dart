@@ -11,7 +11,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/player_provider.dart';
 import '../presentation/providers/scan_mode_provider.dart';
 import '../presentation/providers/folders_provider.dart';
-import '../presentation/providers/continue_watching_provider.dart';
+import '../presentation/widgets/library/menu_sheet.dart';
 import '../services/media_session_service.dart';
 import '../services/open_file_service.dart';
 import '../services/position_service.dart';
@@ -163,47 +163,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               tooltip: 'Toggle Theme',
               onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
             ),
-            Consumer(
-              builder: (context, ref, _) {
-                final cwEnabled = ref.watch(continueWatchingEnabledProvider);
-                return PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded),
-                  tooltip: 'More options',
-                  onSelected: (value) {
-                    if (value == 'open_file') {
-                      _pickAndOpenVideo(context);
-                    } else if (value == 'continue_watching') {
-                      ref.read(continueWatchingEnabledProvider.notifier).toggle();
-                      ScaffoldMessenger.of(context).clearSnackBars();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            !cwEnabled
-                                ? 'Continue Watching row shown'
-                                : 'Continue Watching row hidden',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem<String>(
-                      value: 'open_file',
-                      child: Row(
-                        children: [
-                          Icon(Icons.add_rounded, size: 20),
-                          SizedBox(width: 12),
-                          Text('Open file...'),
-                        ],
-                      ),
-                    ),
-                    CheckedPopupMenuItem<String>(
-                      value: 'continue_watching',
-                      checked: cwEnabled,
-                      child: const Text('Show Continue Watching'),
-                    ),
-                  ],
+            IconButton(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: 'More options',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  useSafeArea: true,
+                  isScrollControlled: true,
+                  showDragHandle: false,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => MenuSheet(
+                    onOpenFile: () => _pickAndOpenVideo(context),
+                  ),
                 );
               },
             ),
