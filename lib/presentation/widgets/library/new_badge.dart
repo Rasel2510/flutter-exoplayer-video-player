@@ -9,16 +9,16 @@ class NewBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: context.colors.accentSoft,
+        color: context.colors.folderTint,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: context.colors.accentGlow, width: 1),
+        border: Border.all(color: context.colors.folderIcon.withValues(alpha: 0.3), width: 1),
       ),
       child: Text(
         'NEW',
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w800,
-          color: context.colors.accent,
+          color: context.colors.folderIcon,
           letterSpacing: 0.8,
         ),
       ),
