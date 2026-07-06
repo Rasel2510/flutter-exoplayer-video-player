@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/video_file.dart';
 import '../models/video_folder.dart';
 import '../presentation/providers/folders_provider.dart';
+import '../presentation/providers/continue_watching_provider.dart';
 import '../services/duration_cache_service.dart';
 import '../services/position_service.dart';
 import '../services/recent_files_service.dart';
@@ -434,8 +435,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final totalResults = displayFolders.length +
         (showVideoHeader ? 1 : 0) +
         matchedVideos.length;
+    final continueWatchingEnabled = ref.watch(continueWatchingEnabledProvider);
     // Continue Watching strip: only outside of search, as the first list item.
-    final showContinueWatching =
+    final showContinueWatching = continueWatchingEnabled &&
         _searchQuery.isEmpty && _continueWatching.isNotEmpty;
     final cwCount = showContinueWatching ? 1 : 0;
 

@@ -26,6 +26,7 @@ class PlayerPreferencesService {
   static const _subBgColorIndexKey = 'subtitle_bg_color_index_v1';
   static const _subFontIndexKey  = 'subtitle_font_index_v1';
   static const _seekIntervalKey  = 'player_seek_interval_v1';
+  static const _continueWatchingEnabledKey = 'continue_watching_enabled_v1';
 
   // ── Fit mode ──────────────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ class PlayerPreferencesService {
       _subtitleBgColorIndexCache = p.getInt(_subBgColorIndexKey) ?? 0;
       _subtitleFontIndexCache = p.getInt(_subFontIndexKey) ?? 0;
       _seekIntervalCache = p.getInt(_seekIntervalKey) ?? 10;
+      _continueWatchingEnabledCache = p.getBool(_continueWatchingEnabledKey) ?? true;
     } catch (_) {}
   }
 
@@ -166,5 +168,15 @@ class PlayerPreferencesService {
   Future<void> saveSeekInterval(int seconds) async {
     _seekIntervalCache = seconds;
     try { await (await _p).setInt(_seekIntervalKey, seconds); } catch (_) {}
+  }
+
+  // ── Continue Watching visibility toggle ───────────────────────────────────
+
+  bool _continueWatchingEnabledCache = true;
+  bool get continueWatchingEnabledCached => _continueWatchingEnabledCache;
+
+  Future<void> saveContinueWatchingEnabled(bool enabled) async {
+    _continueWatchingEnabledCache = enabled;
+    try { await (await _p).setBool(_continueWatchingEnabledKey, enabled); } catch (_) {}
   }
 }

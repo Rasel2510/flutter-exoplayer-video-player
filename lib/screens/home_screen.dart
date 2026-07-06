@@ -11,6 +11,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/player_provider.dart';
 import '../presentation/providers/scan_mode_provider.dart';
 import '../presentation/providers/folders_provider.dart';
+import '../presentation/providers/continue_watching_provider.dart';
 import '../services/media_session_service.dart';
 import '../services/open_file_service.dart';
 import '../services/position_service.dart';
@@ -162,12 +163,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               tooltip: 'Toggle Theme',
               onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
             ),
-            IconButton(
-              icon: const Icon(Icons.add_rounded),
-              tooltip: 'Open file',
-              onPressed: () => _pickAndOpenVideo(context),
+            Consumer(
+              builder: (context, ref, _) {
+                final cwEnabled = ref.watch(continueWatchingEnabledProvider);
+                return PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  tooltip: 'More options',
+                  onSelected: (value) {
+                    if (value == 'open_file') {
+                      _pickAndOpenVideo(context);
+                    } else if (value == 'continue_watching') {
+                      ref.read(continueWatchingEnabledProvider.notifier).toggle();
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            !cwEnabled
+                                ? 'Continue Watching row shown'
+                                : 'Continue Watching row hidden',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String>(
+                      value: 'open_file',
+                      child: Row(
+                        children: [
+                          Icon(Icons.add_rounded, size: 20),
+                          SizedBox(width: 12),
+                          Text('Open file...'),
+                        ],
+                      ),
+                    ),
+                    CheckedPopupMenuItem<String>(
+                      value: 'continue_watching',
+                      checked: cwEnabled,
+                      child: const Text('Show Continue Watching'),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(width: 4),
           ],
         ),
         body: LibraryScreen(
