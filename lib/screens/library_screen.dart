@@ -502,6 +502,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         // newPaths already watched above — no extra select needed.
                         final isNew = newPaths.contains(folder.path);
                         return FolderCard(
+                          key: ValueKey(folder.path),
                           folder: folder,
                           isExternal: isExternal,
                           isNew: isNew,

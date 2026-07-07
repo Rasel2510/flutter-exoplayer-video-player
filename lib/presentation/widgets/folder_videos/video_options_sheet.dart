@@ -14,6 +14,7 @@ class VideoOptionsSheet extends StatelessWidget {
   final VoidCallback onSelect;
   final VoidCallback onCopyPath;
   final VoidCallback? onClearResume;
+  final VoidCallback onMoveToVault;
   final VoidCallback onDelete;
 
   const VideoOptionsSheet({
@@ -27,6 +28,7 @@ class VideoOptionsSheet extends StatelessWidget {
     required this.onSelect,
     required this.onCopyPath,
     this.onClearResume,
+    required this.onMoveToVault,
     required this.onDelete,
   });
 
@@ -86,6 +88,10 @@ class VideoOptionsSheet extends StatelessWidget {
                     icon: Icons.copy_rounded,
                     label: 'Copy path',
                     onTap: onCopyPath),
+                OptionRow(
+                    icon: Icons.lock_rounded,
+                    label: 'Move to Vault',
+                    onTap: onMoveToVault),
                 if (hasResume && onClearResume != null)
                   OptionRow(
                       icon: Icons.replay_rounded,

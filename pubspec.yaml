@@ -49,6 +49,10 @@ dependencies:
   freezed_annotation: ^2.4.1
   permission_handler: ^12.0.2
   share_plus: ^10.0.0
+  local_auth: ^3.0.1
+  # Salted-hash storage for the Secure Vault's own PIN (kept independent of
+  # the device's screen-lock credential).
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

@@ -122,6 +122,11 @@ class PlayerState with _$PlayerState {
     @Default(10) int seekInterval,
     // Mini player state.
     @Default(false) bool isMiniPlayerActive,
+    // True once the current video has played to its natural end (and isn't
+    // looping via A-B repeat). The mini player swaps skip-back/play-pause/
+    // skip-forward for previous/replay/next while this is true; cleared by
+    // replay() or by switching to a different video.
+    @Default(false) bool hasEnded,
   }) = _PlayerState;
 
   double get progress => duration.inMilliseconds > 0
@@ -254,7 +259,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
     MediaSessionService.setActionHandler(
       onAction: _handleMediaAction,
-      onSeek: (pos) => _engine?.seek(pos),
+      onSeek: (pos) => _engine?.seek(pos, fast: true),
       onPipModeChanged: (isPip) {
         state = state.copyWith(isPipMode: isPip);
       },
@@ -502,6 +507,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _engine?.play();
         return;
       }
+      // Genuinely finished — the mini player swaps its controls to
+      // Previous / Replay / Next while this is true.
+      state = state.copyWith(hasEnded: true);
       if (state.sleepTimerEndOfVideo) {
         _engine?.pause();
         state = state.copyWith(sleepTimerEndOfVideo: false);
@@ -677,6 +685,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       currentCue: '',
       abRepeatStart: null,
       abRepeatEnd: null,
+      hasEnded: false,
     );
 
     // Re-subscribe streams for the fresh item (the engine instance is reused).
@@ -896,20 +905,37 @@ class PlayerNotifier extends Notifier<PlayerState> {
   void togglePlay() {
     if (_isDisposing || _engine == null) return;
     if (state.autoPlayCountdown != null) cancelAutoPlay();
+    // Any deliberate play/pause after the video ended means the user is
+    // interacting with playback again — clear the flag so the mini player
+    // doesn't stay stuck on Previous/Replay/Next if reopened later.
+    if (state.hasEnded) state = state.copyWith(hasEnded: false);
     try {
       _engine?.playOrPause();
     } catch (_) {}
     showControls();
   }
 
+  /// Restarts the current video from the beginning — the mini player's
+  /// end-of-video "Replay" action (shown in place of play/pause once
+  /// [PlayerState.hasEnded] is true).
+  void replay() {
+    if (_isDisposing || _engine == null) return;
+    if (state.autoPlayCountdown != null) cancelAutoPlay();
+    state = state.copyWith(hasEnded: false);
+    _engine!.seek(Duration.zero);
+    _engine!.play();
+    showControls();
+  }
+
   void seekRelative(int seconds, {bool revealControls = true}) {
     if (_engine == null) return;
     if (state.autoPlayCountdown != null) cancelAutoPlay();
+    if (state.hasEnded) state = state.copyWith(hasEnded: false);
     final newPos = state.position + Duration(seconds: seconds);
     final target = newPos < Duration.zero
         ? Duration.zero
         : (newPos > state.duration ? state.duration : newPos);
-    _engine!.seek(target);
+    _engine!.seek(target, fast: true);
     if (revealControls) showControls();
   }
 
@@ -923,6 +949,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   void endSeek(double value) {
     if (_engine == null) return;
     if (state.autoPlayCountdown != null) cancelAutoPlay();
+    if (state.hasEnded) state = state.copyWith(hasEnded: false);
     final target =
         Duration(milliseconds: (value * state.duration.inMilliseconds).round());
     // Scrubbing → keyframe-snap seek so the release lands instantly without the

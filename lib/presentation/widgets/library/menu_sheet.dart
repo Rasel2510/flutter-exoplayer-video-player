@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../providers/continue_watching_provider.dart';
 import '../../providers/library_appearance_provider.dart';
+import '../../../screens/vault_pin_screen.dart';
+import '../../../screens/vault_screen.dart';
+import '../../../services/vault_pin_service.dart';
 import '../common/sheet_surface.dart';
+import '../smooth_page_route.dart';
 
 /// A beautiful bottom sheet for app settings and overflow actions.
 class MenuSheet extends ConsumerWidget {
@@ -76,6 +80,52 @@ class MenuSheet extends ConsumerWidget {
               ),
             ),
             
+            // Secure Vault action. Gated by the vault's OWN PIN (set up on
+            // first visit), not the device's screen-lock credential — see
+            // VaultPinScreen. The PIN screen is pushed on top of this still-open
+            // sheet; only after it reports success do we pop the sheet and
+            // push VaultScreen, mirroring how every other async-then-navigate
+            // handler in this sheet is guarded by `context.mounted`.
+            InkWell(
+              onTap: () async {
+                final hasPin = await VaultPinService.instance.hasPin();
+                if (!context.mounted) return;
+                final mode =
+                    hasPin ? VaultPinMode.unlock : VaultPinMode.create;
+                final unlocked = await Navigator.push<bool>(
+                  context,
+                  SmoothPageRoute(child: VaultPinScreen(mode: mode)),
+                );
+                if (unlocked == true && context.mounted) {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    SmoothPageRoute(child: const VaultScreen()),
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_rounded,
+                      color: context.colors.textSecondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Secure Vault',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
             // Continue Watching toggle
             InkWell(
               onTap: () {
@@ -136,20 +186,23 @@ class MenuSheet extends ConsumerWidget {
             // falls back to for the "Theme" preset, so the preview ring here
             // shows the same color the icon renders — not a generic accent.
             _AccentColorRow(
-              icon: Icons.folder_rounded,
               label: 'Folder icon color',
               selectedIndex: appearance.folderIconColorIndex,
               themeDefault: context.colors.folderIcon,
               onSelect: appearanceNotifier.setFolderIconColorIndex,
+              leadingBuilder: (color) =>
+                  Icon(Icons.folder_rounded, color: color, size: 22),
             ),
 
             // New badge color. Same themeDefault as NewBadge/NewVideoBadge use.
             _AccentColorRow(
-              icon: Icons.fiber_new_rounded,
               label: 'New badge color',
               selectedIndex: appearance.newBadgeColorIndex,
               themeDefault: context.colors.folderIcon,
               onSelect: appearanceNotifier.setNewBadgeColorIndex,
+              // Preview the actual NEW badge chip rather than a generic icon
+              // so this row shows exactly what folder/video lists render.
+              leadingBuilder: (color) => _NewBadgePreview(color: color),
             ),
 
             SizedBox(height: 16 + MediaQuery.of(context).padding.bottom),
@@ -165,18 +218,18 @@ class MenuSheet extends ConsumerWidget {
 /// right. Mirrors the color-preset pickers already used in the subtitle
 /// appearance sheet.
 class _AccentColorRow extends StatelessWidget {
-  final IconData icon;
   final String label;
   final int selectedIndex;
   final Color themeDefault;
   final void Function(int index) onSelect;
+  final Widget Function(Color color) leadingBuilder;
 
   const _AccentColorRow({
-    required this.icon,
     required this.label,
     required this.selectedIndex,
     required this.themeDefault,
     required this.onSelect,
+    required this.leadingBuilder,
   });
 
   @override
@@ -185,11 +238,7 @@ class _AccentColorRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: resolveLibraryAccent(selectedIndex, themeDefault),
-            size: 22,
-          ),
+          leadingBuilder(resolveLibraryAccent(selectedIndex, themeDefault)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -211,6 +260,35 @@ class _AccentColorRow extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Mirrors NewBadge/NewVideoBadge's decoration exactly so this settings-row
+/// preview is a true WYSIWYG match for the chip shown on folder/video lists.
+class _NewBadgePreview extends StatelessWidget {
+  final Color color;
+
+  const _NewBadgePreview({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Text(
+        'NEW',
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: color,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }

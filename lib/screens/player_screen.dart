@@ -361,7 +361,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     // instead of a black gap, while the decoder warms up.
                     final path = ref.read(playerProvider).currentVideo?.path ??
                         widget.filePath;
-                    return _LoadingPoster(videoPath: path);
+                    return Hero(
+                      tag: 'video_thumb_$path',
+                      child: _LoadingPoster(videoPath: path),
+                    );
                   }
 
                   // Render each engine with its proper widget: the software

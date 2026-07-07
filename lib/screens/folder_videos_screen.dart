@@ -9,22 +9,23 @@ import 'package:share_plus/share_plus.dart';
 import '../models/video_file.dart';
 import '../models/video_folder.dart';
 import '../presentation/providers/folders_provider.dart';
+import '../presentation/providers/vault_provider.dart';
 import '../presentation/widgets/resume_dialog.dart';
 import '../services/duration_cache_service.dart';
 import '../services/player_preferences_service.dart';
 import '../services/position_service.dart';
 import '../services/recent_files_service.dart';
 import '../services/thumbnail_service.dart';
+import '../presentation/widgets/folder_videos/folder_videos_app_bar.dart';
 import '../presentation/widgets/folder_videos/no_results.dart';
-import '../presentation/widgets/folder_videos/resume_fab.dart';
+import '../presentation/widgets/folder_videos/selection_delete_bar.dart';
 import '../presentation/widgets/folder_videos/sort_option.dart';
 import '../presentation/widgets/folder_videos/sort_sheet.dart';
 import '../presentation/widgets/folder_videos/video_card.dart';
 import '../presentation/widgets/folder_videos/video_options_sheet.dart';
 import '../presentation/widgets/folder_videos/video_details_sheet.dart';
-import '../presentation/widgets/folder_videos/folder_videos_app_bar.dart';
 import '../presentation/widgets/folder_videos/folder_search_bar.dart';
-import '../presentation/widgets/folder_videos/selection_delete_bar.dart';
+import '../presentation/widgets/folder_videos/resume_fab.dart';
 import 'player_screen.dart';
 import '../presentation/widgets/smooth_page_route.dart';
 
@@ -163,6 +164,39 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     _exitSelectionMode();
 
     // If no videos remain, pop back
+    final remaining = widget.folder.videos
+        .where((v) => !_deletedPaths.contains(v.path))
+        .length;
+    if (remaining == 0 && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  /// Moves every selected video to the Secure Vault. Called from the app
+  /// bar's lock icon (multi-select mode) — the button is only enabled when
+  /// there's a selection, so [_selectedPaths] is never empty here.
+  Future<void> _moveSelectedToVault(List<VideoFile> sorted) async {
+    final selectedVfs =
+        sorted.where((v) => _selectedPaths.contains(v.path)).toList();
+    await ref.read(vaultProvider.notifier).addVideos(selectedVfs);
+
+    final pathsToHide = _selectedPaths.toList();
+    setState(() {
+      _deletedPaths.addAll(pathsToHide);
+      for (final path in pathsToHide) {
+        _positions.remove(path);
+        _durations.remove(path);
+      }
+      _sortedCache = null;
+    });
+    ref.read(foldersProvider.notifier).removeVideos(pathsToHide);
+
+    if (!mounted) return;
+    _exitSelectionMode();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Videos moved to Vault')),
+    );
+
     final remaining = widget.folder.videos
         .where((v) => !_deletedPaths.contains(v.path))
         .length;
@@ -444,6 +478,31 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
             ),
           );
         },
+        onMoveToVault: () async {
+          Navigator.pop(context);
+          await ref.read(vaultProvider.notifier).addVideo(vf);
+          
+          setState(() {
+            _deletedPaths.add(vf.path);
+            _positions.remove(vf.path);
+            _durations.remove(vf.path);
+            _sortedCache = null;
+          });
+          ref.read(foldersProvider.notifier).removeVideo(vf.path);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Video moved to Vault')),
+            );
+            
+            final remaining = widget.folder.videos
+                .where((v) => !_deletedPaths.contains(v.path))
+                .length;
+            if (remaining == 0) {
+              Navigator.pop(context);
+            }
+          }
+        },
         onClearResume: hasResume
             ? () {
                 Navigator.pop(context);
@@ -710,6 +769,8 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
         onToggleSearch: _toggleSearch,
         onShowSort: _showSortSheet,
         onEnterSelection: () => _enterSelectionMode(null),
+        onMoveToVault:
+            _selectedPaths.isEmpty ? null : () => _moveSelectedToVault(sorted),
       ),
       floatingActionButton: (_selectionMode || last == null)
           ? null
@@ -717,14 +778,18 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
               position: _positions[last.path]!,
               onTap: () => _openVideo(last, sorted, forceResume: true),
             ),
-      bottomNavigationBar: _selectionMode
-          ? SelectionDeleteBar(
-              selectedCount: _selectedPaths.length,
-              onDelete: _selectedPaths.isEmpty
-                  ? null
-                  : () => _confirmDeleteSelected(display),
-            )
-          : null,
+      bottomNavigationBar: AnimatedSize(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: _selectionMode
+            ? SelectionActionBar(
+                selectedCount: _selectedPaths.length,
+                onDelete: _selectedPaths.isEmpty
+                    ? null
+                    : () => _confirmDeleteSelected(display),
+              )
+            : const SizedBox.shrink(),
+      ),
       body: Column(
         children: [
           FolderSearchBar(open: _searchOpen, controller: _searchCtrl),
@@ -750,6 +815,7 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
                           savedPos != null && savedPos > Duration.zero;
                       final isNew = newPaths.contains(vf.path);
                       return RepaintBoundary(
+                        key: ValueKey(vf.path),
                         child: VideoCard(
                           vf: vf,
                           savedPos: hasResume ? savedPos : null,

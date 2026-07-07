@@ -14,7 +14,10 @@ class NewVideoBadge extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: context.colors.folderTint,
+        // Tinted from the badge's own accent (not the fixed theme pink) so
+        // the chip always matches whatever "New badge color" is selected —
+        // this is also exactly what the settings-sheet preview renders.
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),

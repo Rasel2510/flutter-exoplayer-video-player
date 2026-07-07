@@ -71,7 +71,12 @@ mixin _$PlayerState {
       throw _privateConstructorUsedError; // Double-tap seek interval in seconds.
   int get seekInterval =>
       throw _privateConstructorUsedError; // Mini player state.
-  bool get isMiniPlayerActive => throw _privateConstructorUsedError;
+  bool get isMiniPlayerActive =>
+      throw _privateConstructorUsedError; // True once the current video has played to its natural end (and isn't
+// looping via A-B repeat). The mini player swaps skip-back/play-pause/
+// skip-forward for previous/replay/next while this is true; cleared by
+// replay() or by switching to a different video.
+  bool get hasEnded => throw _privateConstructorUsedError;
 
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.
@@ -129,7 +134,8 @@ abstract class $PlayerStateCopyWith<$Res> {
       Duration? abRepeatStart,
       Duration? abRepeatEnd,
       int seekInterval,
-      bool isMiniPlayerActive});
+      bool isMiniPlayerActive,
+      bool hasEnded});
 }
 
 /// @nodoc
@@ -190,6 +196,7 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
     Object? abRepeatEnd = freezed,
     Object? seekInterval = null,
     Object? isMiniPlayerActive = null,
+    Object? hasEnded = null,
   }) {
     return _then(_value.copyWith(
       isInitialized: null == isInitialized
@@ -364,6 +371,10 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
           ? _value.isMiniPlayerActive
           : isMiniPlayerActive // ignore: cast_nullable_to_non_nullable
               as bool,
+      hasEnded: null == hasEnded
+          ? _value.hasEnded
+          : hasEnded // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -419,7 +430,8 @@ abstract class _$$PlayerStateImplCopyWith<$Res>
       Duration? abRepeatStart,
       Duration? abRepeatEnd,
       int seekInterval,
-      bool isMiniPlayerActive});
+      bool isMiniPlayerActive,
+      bool hasEnded});
 }
 
 /// @nodoc
@@ -478,6 +490,7 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
     Object? abRepeatEnd = freezed,
     Object? seekInterval = null,
     Object? isMiniPlayerActive = null,
+    Object? hasEnded = null,
   }) {
     return _then(_$PlayerStateImpl(
       isInitialized: null == isInitialized
@@ -652,6 +665,10 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
           ? _value.isMiniPlayerActive
           : isMiniPlayerActive // ignore: cast_nullable_to_non_nullable
               as bool,
+      hasEnded: null == hasEnded
+          ? _value.hasEnded
+          : hasEnded // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -702,7 +719,8 @@ class _$PlayerStateImpl extends _PlayerState {
       this.abRepeatStart,
       this.abRepeatEnd,
       this.seekInterval = 10,
-      this.isMiniPlayerActive = false})
+      this.isMiniPlayerActive = false,
+      this.hasEnded = false})
       : _audioTracks = audioTracks,
         _folderVideos = folderVideos,
         _subtitleTracks = subtitleTracks,
@@ -860,10 +878,17 @@ class _$PlayerStateImpl extends _PlayerState {
   @override
   @JsonKey()
   final bool isMiniPlayerActive;
+// True once the current video has played to its natural end (and isn't
+// looping via A-B repeat). The mini player swaps skip-back/play-pause/
+// skip-forward for previous/replay/next while this is true; cleared by
+// replay() or by switching to a different video.
+  @override
+  @JsonKey()
+  final bool hasEnded;
 
   @override
   String toString() {
-    return 'PlayerState(isInitialized: $isInitialized, isPlaying: $isPlaying, intendsToPlay: $intendsToPlay, controlsVisible: $controlsVisible, isPipMode: $isPipMode, rotationMode: $rotationMode, isSeeking: $isSeeking, seekValue: $seekValue, position: $position, duration: $duration, volume: $volume, brightness: $brightness, playbackSpeed: $playbackSpeed, fitMode: $fitMode, audioTracks: $audioTracks, selectedAudioTrack: $selectedAudioTrack, audioEnabled: $audioEnabled, swipeGesture: $swipeGesture, swipeValue: $swipeValue, folderVideos: $folderVideos, currentIndex: $currentIndex, subtitleTracks: $subtitleTracks, selectedSubtitleTrack: $selectedSubtitleTrack, subtitlesEnabled: $subtitlesEnabled, isLocked: $isLocked, lockIconVisible: $lockIconVisible, hasError: $hasError, errorMessage: $errorMessage, autoPlayCountdown: $autoPlayCountdown, zoomScale: $zoomScale, loopMode: $loopMode, textureId: $textureId, currentCue: $currentCue, videoWidth: $videoWidth, videoHeight: $videoHeight, sleepTimerEndsAt: $sleepTimerEndsAt, sleepTimerEndOfVideo: $sleepTimerEndOfVideo, subtitleDelay: $subtitleDelay, holdFastForward: $holdFastForward, abRepeatStart: $abRepeatStart, abRepeatEnd: $abRepeatEnd, seekInterval: $seekInterval, isMiniPlayerActive: $isMiniPlayerActive)';
+    return 'PlayerState(isInitialized: $isInitialized, isPlaying: $isPlaying, intendsToPlay: $intendsToPlay, controlsVisible: $controlsVisible, isPipMode: $isPipMode, rotationMode: $rotationMode, isSeeking: $isSeeking, seekValue: $seekValue, position: $position, duration: $duration, volume: $volume, brightness: $brightness, playbackSpeed: $playbackSpeed, fitMode: $fitMode, audioTracks: $audioTracks, selectedAudioTrack: $selectedAudioTrack, audioEnabled: $audioEnabled, swipeGesture: $swipeGesture, swipeValue: $swipeValue, folderVideos: $folderVideos, currentIndex: $currentIndex, subtitleTracks: $subtitleTracks, selectedSubtitleTrack: $selectedSubtitleTrack, subtitlesEnabled: $subtitlesEnabled, isLocked: $isLocked, lockIconVisible: $lockIconVisible, hasError: $hasError, errorMessage: $errorMessage, autoPlayCountdown: $autoPlayCountdown, zoomScale: $zoomScale, loopMode: $loopMode, textureId: $textureId, currentCue: $currentCue, videoWidth: $videoWidth, videoHeight: $videoHeight, sleepTimerEndsAt: $sleepTimerEndsAt, sleepTimerEndOfVideo: $sleepTimerEndOfVideo, subtitleDelay: $subtitleDelay, holdFastForward: $holdFastForward, abRepeatStart: $abRepeatStart, abRepeatEnd: $abRepeatEnd, seekInterval: $seekInterval, isMiniPlayerActive: $isMiniPlayerActive, hasEnded: $hasEnded)';
   }
 
   @override
@@ -954,7 +979,9 @@ class _$PlayerStateImpl extends _PlayerState {
             (identical(other.seekInterval, seekInterval) ||
                 other.seekInterval == seekInterval) &&
             (identical(other.isMiniPlayerActive, isMiniPlayerActive) ||
-                other.isMiniPlayerActive == isMiniPlayerActive));
+                other.isMiniPlayerActive == isMiniPlayerActive) &&
+            (identical(other.hasEnded, hasEnded) ||
+                other.hasEnded == hasEnded));
   }
 
   @override
@@ -1002,7 +1029,8 @@ class _$PlayerStateImpl extends _PlayerState {
         abRepeatStart,
         abRepeatEnd,
         seekInterval,
-        isMiniPlayerActive
+        isMiniPlayerActive,
+        hasEnded
       ]);
 
   /// Create a copy of PlayerState
@@ -1058,7 +1086,8 @@ abstract class _PlayerState extends PlayerState {
       final Duration? abRepeatStart,
       final Duration? abRepeatEnd,
       final int seekInterval,
-      final bool isMiniPlayerActive}) = _$PlayerStateImpl;
+      final bool isMiniPlayerActive,
+      final bool hasEnded}) = _$PlayerStateImpl;
   const _PlayerState._() : super._();
 
   @override
@@ -1155,7 +1184,13 @@ abstract class _PlayerState extends PlayerState {
   @override
   int get seekInterval; // Mini player state.
   @override
-  bool get isMiniPlayerActive;
+  bool
+      get isMiniPlayerActive; // True once the current video has played to its natural end (and isn't
+// looping via A-B repeat). The mini player swaps skip-back/play-pause/
+// skip-forward for previous/replay/next while this is true; cleared by
+// replay() or by switching to a different video.
+  @override
+  bool get hasEnded;
 
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.

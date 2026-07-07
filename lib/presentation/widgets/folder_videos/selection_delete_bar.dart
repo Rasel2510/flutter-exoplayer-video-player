@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
 
-/// Bottom bar shown in multi-select mode: a single "Delete Selected (N)" action.
+/// Bottom bar shown in multi-select mode: the Delete action. Move-to-Vault
+/// lives in the app bar (a lock icon beside the select-all icon) instead of
+/// here now, so this is a single full-width button rather than a two-up row.
 /// [onDelete] is null when nothing is selected, which disables the button.
-class SelectionDeleteBar extends StatelessWidget {
+class SelectionActionBar extends StatelessWidget {
   final int selectedCount;
   final VoidCallback? onDelete;
 
-  const SelectionDeleteBar({
+  const SelectionActionBar({
     super.key,
     required this.selectedCount,
     required this.onDelete,
@@ -30,14 +32,14 @@ class SelectionDeleteBar extends StatelessWidget {
               foregroundColor: Colors.white,
               disabledBackgroundColor: context.colors.divider,
               disabledForegroundColor: context.colors.textMuted,
+              minimumSize: const Size.fromHeight(0),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: const StadiumBorder(),
             ),
-            icon: const Icon(Icons.delete_outline_rounded),
+            icon: const Icon(Icons.delete_outline_rounded, size: 20),
             label: Text(
-              'Delete Selected ($selectedCount)',
-              style:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              'Delete ($selectedCount)',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ),
         ),
@@ -45,3 +47,4 @@ class SelectionDeleteBar extends StatelessWidget {
     );
   }
 }
+
