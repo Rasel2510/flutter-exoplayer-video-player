@@ -26,6 +26,8 @@ class PlayerPreferencesService {
   static const _subBgColorIndexKey = 'subtitle_bg_color_index_v1';
   static const _subFontIndexKey  = 'subtitle_font_index_v1';
   static const _seekIntervalKey  = 'player_seek_interval_v1';
+  static const _folderIconColorIndexKey = 'folder_icon_color_index_v1';
+  static const _newBadgeColorIndexKey   = 'new_badge_color_index_v1';
   static const _continueWatchingEnabledKey = 'continue_watching_enabled_v1';
 
   // ── Fit mode ──────────────────────────────────────────────────────────────
@@ -100,6 +102,8 @@ class PlayerPreferencesService {
       _subtitleBgColorIndexCache = p.getInt(_subBgColorIndexKey) ?? 0;
       _subtitleFontIndexCache = p.getInt(_subFontIndexKey) ?? 0;
       _seekIntervalCache = p.getInt(_seekIntervalKey) ?? 10;
+      _folderIconColorIndexCache = p.getInt(_folderIconColorIndexKey) ?? 0;
+      _newBadgeColorIndexCache = p.getInt(_newBadgeColorIndexKey) ?? 0;
       _continueWatchingEnabledCache = p.getBool(_continueWatchingEnabledKey) ?? true;
     } catch (_) {}
   }
@@ -178,5 +182,23 @@ class PlayerPreferencesService {
   Future<void> saveContinueWatchingEnabled(bool enabled) async {
     _continueWatchingEnabledCache = enabled;
     try { await (await _p).setBool(_continueWatchingEnabledKey, enabled); } catch (_) {}
+  }
+
+  // ── Library appearance (folder icon color / new-badge color) ──────────────
+
+  int _folderIconColorIndexCache = 0;
+  int _newBadgeColorIndexCache = 0;
+
+  int get folderIconColorIndexCached => _folderIconColorIndexCache;
+  int get newBadgeColorIndexCached => _newBadgeColorIndexCache;
+
+  Future<void> saveFolderIconColorIndex(int index) async {
+    _folderIconColorIndexCache = index;
+    try { await (await _p).setInt(_folderIconColorIndexKey, index); } catch (_) {}
+  }
+
+  Future<void> saveNewBadgeColorIndex(int index) async {
+    _newBadgeColorIndexCache = index;
+    try { await (await _p).setInt(_newBadgeColorIndexKey, index); } catch (_) {}
   }
 }

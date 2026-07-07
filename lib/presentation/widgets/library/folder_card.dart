@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
 import 'package:flutter_video_player/models/video_folder.dart';
+import '../../providers/library_appearance_provider.dart';
 import 'new_badge.dart';
 import 'resume_pill.dart';
 
-class FolderCard extends StatelessWidget {
+class FolderCard extends ConsumerWidget {
   final VideoFolder folder;
   final bool isExternal;
   final bool isNew;
@@ -23,7 +25,11 @@ class FolderCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final iconColorIndex = ref.watch(
+        libraryAppearanceProvider.select((a) => a.folderIconColorIndex));
+    final folderIconColor =
+        resolveLibraryAccent(iconColorIndex, context.colors.folderIcon);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -44,9 +50,12 @@ class FolderCard extends StatelessWidget {
                     Icon(
                       Icons.folder_rounded,
                       size: 32,
+                      // SD-card folders always show the teal indicator so the
+                      // storage-location cue stays legible regardless of the
+                      // user's chosen accent.
                       color: isExternal
                           ? const Color(0xFF40AAAA)
-                          : context.colors.folderIcon,
+                          : folderIconColor,
                     ),
                     if (isExternal)
                       const Positioned(

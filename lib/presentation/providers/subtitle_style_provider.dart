@@ -33,6 +33,8 @@ const subtitleFontPresets = <({String label, String? family})>[
   (label: 'Condensed', family: 'sans-serif-condensed'),
   (label: 'Light', family: 'sans-serif-light'),
   (label: 'Cursive', family: 'cursive'),
+  (label: 'Casual', family: 'casual'),
+  (label: 'Small Caps', family: 'sans-serif-smallcaps'),
 ];
 
 class SubtitleStyle {
