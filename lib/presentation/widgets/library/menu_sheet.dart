@@ -185,7 +185,11 @@ class _AccentColorRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Row(
         children: [
-          Icon(icon, color: context.colors.textSecondary, size: 22),
+          Icon(
+            icon,
+            color: resolveLibraryAccent(selectedIndex, themeDefault),
+            size: 22,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(

@@ -120,6 +120,8 @@ class PlayerState with _$PlayerState {
     Duration? abRepeatEnd,
     // Double-tap seek interval in seconds.
     @Default(10) int seekInterval,
+    // Mini player state.
+    @Default(false) bool isMiniPlayerActive,
   }) = _PlayerState;
 
   double get progress => duration.inMilliseconds > 0
@@ -208,6 +210,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _hasStartedPlaying = false;
     _usingFallback = false;
 
+    // If restoring from a mini player for the SAME file, don't reinitialize.
+    if (state.isMiniPlayerActive && _currentPath == filePath && _engine != null) {
+      restoreFromMiniPlayer();
+      return;
+    }
+
     final prefsFuture = Future.wait([
       PlayerPreferencesService.instance.loadFitModeIndex(),     // [0]
       PlayerPreferencesService.instance.loadSpeed(),             // [1]
@@ -252,13 +260,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
       },
     );
 
-    // Open PAUSED so rate/volume/repeat can be applied before audio begins —
-    // playback is started only afterwards. `start:` begins decoding AT the
-    // resume point instead of playing from 0 then seeking.
+    // Open and PLAY immediately. We don't wait for preferences to load.
+    // This removes the artificial delay caused by platform channel reads.
     final startAt =
         (resumeFrom != null && resumeFrom > Duration.zero) ? resumeFrom : null;
     _resumeTarget = startAt;
-    final openFuture = engine.open(filePath, start: startAt, play: false);
+    final openFuture = engine.open(filePath, start: startAt, play: true);
 
     final results = await prefsFuture;
     final fitModeIdx    = results[0] as int;
@@ -291,6 +298,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
     });
 
+    // Apply preferences asynchronously while the video is already starting
     await engine.setVolume(100);
     await engine.setRate(savedSpeed);
     await engine.setRepeatMode(loopMode.repeatCode);
@@ -299,7 +307,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
 
     await openFuture;
-    await _engine?.play();
     WakelockPlus.enable(); // fire-and-forget — never gated the first frame
   }
 
@@ -416,6 +423,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _savePosition();
       }
       _syncMediaSessionPlaybackState();
+      
+      if (!_isDisposing && !_audioMode) {
+        if (v) {
+          WakelockPlus.enable();
+        } else {
+          WakelockPlus.disable();
+        }
+      }
     }));
 
     _subs.add(engine.intentStream.listen((v) {
@@ -1091,9 +1106,38 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _leftScreen = true;
     if (_audioMode) {
       await _detachForAudioMode();
+    } else if (state.isMiniPlayerActive) {
+      await _detachForMiniPlayer();
     } else {
       await dispose();
     }
+  }
+
+  Future<void> _detachForMiniPlayer() async {
+    _hideTimer?.cancel();
+    _lockIconTimer?.cancel();
+    _hudTimer?.cancel();
+    _saveTimer?.cancel();
+    await _savePosition();
+    try { await _brightness.resetScreenBrightness(); } catch (_) {}
+    // Wakelock is managed by playingStream, so we don't disable it here
+    // to allow the mini player to keep the screen awake while playing.
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
+
+  void minimize() {
+    state = state.copyWith(isMiniPlayerActive: true);
+  }
+  
+  void restoreFromMiniPlayer() {
+    state = state.copyWith(isMiniPlayerActive: false);
+    _leftScreen = false;
   }
 
   Future<void> _detachForAudioMode() async {

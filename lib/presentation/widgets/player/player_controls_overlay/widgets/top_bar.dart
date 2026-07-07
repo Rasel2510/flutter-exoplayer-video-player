@@ -168,6 +168,16 @@ class _TopBar extends ConsumerWidget {
                 // Orange when loop-one, accent when loop-all
                 loopMode: loopMode,
               ),
+              const SizedBox(width: 2),
+              // Mini player — minimize video to a floating window.
+              _GlassIconButton(
+                icon: Icons.featured_video_rounded,
+                size: 19,
+                onTap: () {
+                  ref.read(playerProvider.notifier).minimize();
+                  Navigator.pop(context);
+                },
+              ),
             ],
           ),
           ),
