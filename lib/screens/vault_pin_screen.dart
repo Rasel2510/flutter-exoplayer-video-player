@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../services/secure_screen_guard.dart';
 import '../services/vault_pin_service.dart';
 import '../services/vault_service.dart';
 
@@ -25,6 +26,18 @@ class _VaultPinScreenState extends State<VaultPinScreen> {
   String? _firstEntry; // during create: the PIN typed on the first pass
   String? _error;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    SecureScreenGuard.activate();
+  }
+
+  @override
+  void dispose() {
+    SecureScreenGuard.deactivate();
+    super.dispose();
+  }
 
   bool get _confirming =>
       widget.mode == VaultPinMode.create && _firstEntry != null;

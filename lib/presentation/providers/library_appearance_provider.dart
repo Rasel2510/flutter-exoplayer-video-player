@@ -18,6 +18,13 @@ const libraryAccentPresets = <({String label, Color? color})>[
   (label: 'Indigo', color: Color(0xFF6366F1)),
   (label: 'Rose', color: Color(0xFFF43F5E)),
   (label: 'Teal', color: Color(0xFF14B8A6)),
+  // Appended later — keep adding new presets to the end, never insert
+  // earlier in the list (see class comment above).
+  (label: 'Orange', color: Color(0xFFF97316)),
+  (label: 'Violet', color: Color(0xFF8B5CF6)),
+  (label: 'Fuchsia', color: Color(0xFFD946EF)),
+  (label: 'Cyan', color: Color(0xFF06B6D4)),
+  (label: 'Slate', color: Color(0xFF64748B)),
 ];
 
 /// Resolves a [libraryAccentPresets] index to a concrete color, falling back

@@ -236,21 +236,33 @@ class _AccentColorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          leadingBuilder(resolveLibraryAccent(selectedIndex, themeDefault)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 15, color: context.colors.textPrimary),
-            ),
+          Row(
+            children: [
+              leadingBuilder(resolveLibraryAccent(selectedIndex, themeDefault)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 15, color: context.colors.textPrimary),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          for (var i = 0; i < libraryAccentPresets.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: GestureDetector(
+          const SizedBox(height: 12),
+          // Horizontally scrollable so the swatch strip never overflows the
+          // row, no matter how many presets libraryAccentPresets grows to —
+          // mirrors the font-chip strip in the subtitle appearance sheet.
+          SizedBox(
+            height: 26,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: libraryAccentPresets.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => GestureDetector(
                 onTap: () => onSelect(i),
                 child: _Swatch(
                   color: resolveLibraryAccent(i, themeDefault),
@@ -259,6 +271,7 @@ class _AccentColorRow extends StatelessWidget {
                 ),
               ),
             ),
+          ),
         ],
       ),
     );

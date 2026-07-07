@@ -5,6 +5,13 @@ import '../models/video_file.dart';
 import '../presentation/providers/vault_provider.dart';
 import '../presentation/widgets/folder_videos/video_card.dart';
 import '../presentation/widgets/smooth_page_route.dart';
+import '../presentation/widgets/vault/vault_app_bar.dart';
+import '../presentation/widgets/vault/vault_auto_lock_sheet.dart';
+import '../presentation/widgets/vault/vault_menu_sheet.dart';
+import '../presentation/widgets/vault/vault_options_sheet.dart';
+import '../presentation/widgets/vault/vault_selection_bar.dart';
+import '../services/secure_screen_guard.dart';
+import '../services/vault_settings_service.dart';
 import 'player_screen.dart';
 import 'vault_pin_screen.dart';
 
@@ -15,17 +22,84 @@ class VaultScreen extends ConsumerStatefulWidget {
   ConsumerState<VaultScreen> createState() => _VaultScreenState();
 }
 
-class _VaultScreenState extends ConsumerState<VaultScreen> {
+class _VaultScreenState extends ConsumerState<VaultScreen>
+    with WidgetsBindingObserver {
   bool _selectionMode = false;
   final Set<String> _selectedPaths = {};
+
+  // Set when the app is backgrounded while this screen is showing; compared
+  // against the configured auto-lock duration on resume. Null means we
+  // haven't been backgrounded since the last check.
+  DateTime? _backgroundedAt;
+  int _autoLockRetries = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SecureScreenGuard.activate();
     // Refresh vault contents when entering
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(vaultProvider.notifier).load();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SecureScreenGuard.deactivate();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (_backgroundedAt == null) {
+        _backgroundedAt = DateTime.now();
+        _autoLockRetries = 0;
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      _checkAutoLock();
+    }
+  }
+
+  // Re-locks the vault (by popping back to wherever it was opened from) if
+  // the app was backgrounded at least as long as the configured auto-lock
+  // duration. Only pops while this screen is the visible/top route — if a
+  // dialog or bottom sheet (e.g. the delete confirmation) is on top, popping
+  // would dismiss that instead of locking the vault, so we retry briefly
+  // rather than silently dropping the lock for this cycle. Also leaves the
+  // screen alone entirely if the user drilled into a video from the vault
+  // and backgrounded there instead — we don't chase across routes to avoid
+  // popping the wrong screen.
+  Future<void> _checkAutoLock() async {
+    final backgroundedAt = _backgroundedAt;
+    if (backgroundedAt == null || !mounted) return;
+    final autoLockSeconds =
+        await VaultSettingsService.instance.getAutoLockSeconds();
+    if (!mounted) return;
+    if (autoLockSeconds < 0) {
+      _backgroundedAt = null;
+      return; // "Never"
+    }
+    final elapsed = DateTime.now().difference(backgroundedAt);
+    if (elapsed.inSeconds < autoLockSeconds) {
+      _backgroundedAt = null;
+      return;
+    }
+    if (ModalRoute.of(context)?.isCurrent == true) {
+      _backgroundedAt = null;
+      Navigator.of(context).pop();
+      return;
+    }
+    if (_autoLockRetries++ < 10) {
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) _checkAutoLock();
+      });
+    } else {
+      _backgroundedAt = null;
+    }
   }
 
   void _enterSelectionMode(VideoFile? initial) {
@@ -137,6 +211,47 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
   }
 
+  void _showVaultMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (_) => VaultMenuSheet(
+        onChangePin: () {
+          Navigator.pop(context);
+          _changePin();
+        },
+        onAutoLockTimer: () {
+          Navigator.pop(context);
+          _showAutoLockSheet();
+        },
+      ),
+    );
+  }
+
+  Future<void> _showAutoLockSheet() async {
+    final currentSeconds = await VaultSettingsService.instance.getAutoLockSeconds();
+    if (!mounted) return;
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (_) => VaultAutoLockSheet(currentSeconds: currentSeconds),
+    );
+    if (chosen == null || chosen == currentSeconds) return;
+    await VaultSettingsService.instance.setAutoLockSeconds(chosen);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Auto-lock set to ${formatAutoLockSeconds(chosen).toLowerCase()}'),
+      ),
+    );
+  }
+
   void _openVideo(VideoFile vf, List<VideoFile> playlist) {
     Navigator.push(
       context,
@@ -158,68 +273,30 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       showDragHandle: false,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (_) => Container(
-        margin: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: context.colors.surface,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-              child: Text(
-                vf.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Divider(color: context.colors.border, height: 1),
-            ListTile(
-              leading: Icon(Icons.play_arrow_rounded, color: context.colors.textPrimary),
-              title: const Text('Play'),
-              onTap: () {
-                Navigator.pop(context);
-                final list = ref.read(vaultProvider);
-                _openVideo(vf, list);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.restore_rounded, color: context.colors.accent),
-              title: const Text('Restore from Vault'),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(vaultProvider.notifier).restoreVideo(vf);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Video restored successfully')),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.check_circle_outline_rounded,
-                  color: context.colors.textPrimary),
-              title: const Text('Select'),
-              onTap: () {
-                Navigator.pop(context);
-                _enterSelectionMode(vf);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_rounded, color: Colors.redAccent),
-              title: const Text('Delete permanently', style: TextStyle(color: Colors.redAccent)),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(vaultProvider.notifier).deleteVideo(vf);
-              },
-            ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
-          ],
-        ),
+      builder: (_) => VaultOptionsSheet(
+        vf: vf,
+        onPlay: () {
+          Navigator.pop(context);
+          final list = ref.read(vaultProvider);
+          _openVideo(vf, list);
+        },
+        onRestore: () async {
+          Navigator.pop(context);
+          await ref.read(vaultProvider.notifier).restoreVideo(vf);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Video restored successfully')),
+            );
+          }
+        },
+        onSelect: () {
+          Navigator.pop(context);
+          _enterSelectionMode(vf);
+        },
+        onDelete: () async {
+          Navigator.pop(context);
+          await ref.read(vaultProvider.notifier).deleteVideo(vf);
+        },
       ),
     );
   }
@@ -230,44 +307,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     return Scaffold(
       backgroundColor: context.colors.bg,
-      appBar: AppBar(
-        backgroundColor: context.colors.bg,
-        scrolledUnderElevation: 0,
-        title: Text(
-          _selectionMode ? '${_selectedPaths.length} selected' : 'Secure Vault',
-          style: TextStyle(
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            _selectionMode ? Icons.close_rounded : Icons.arrow_back_rounded,
-            color: context.colors.textPrimary,
-          ),
-          onPressed: _selectionMode ? _exitSelectionMode : () => Navigator.pop(context),
-        ),
-        actions: [
-          if (_selectionMode)
-            IconButton(
-              icon: Icon(Icons.select_all_rounded, color: context.colors.textPrimary),
-              tooltip: 'Select all',
-              onPressed: () => _selectAll(videos),
-            )
-          else ...[
-            if (videos.isNotEmpty)
-              IconButton(
-                icon: Icon(Icons.checklist_rounded, color: context.colors.textPrimary),
-                tooltip: 'Select',
-                onPressed: () => _enterSelectionMode(null),
-              ),
-            IconButton(
-              icon: Icon(Icons.lock_reset_rounded, color: context.colors.textPrimary),
-              tooltip: 'Change vault PIN',
-              onPressed: _changePin,
-            ),
-          ],
-        ],
+      appBar: VaultAppBar(
+        selectionMode: _selectionMode,
+        selectedCount: _selectedPaths.length,
+        hasVideos: videos.isNotEmpty,
+        onBack: () => Navigator.pop(context),
+        onExitSelection: _exitSelectionMode,
+        onSelectAll: () => _selectAll(videos),
+        onEnterSelection: () => _enterSelectionMode(null),
+        onMenu: _showVaultMenu,
       ),
       body: videos.isEmpty
           ? Center(
@@ -306,83 +354,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               },
             ),
       bottomNavigationBar: _selectionMode
-          ? _VaultSelectionBar(
+          ? VaultSelectionBar(
               selectedCount: _selectedPaths.length,
               onRestore: _selectedPaths.isEmpty ? null : () => _restoreSelected(videos),
               onDelete: _selectedPaths.isEmpty ? null : () => _deleteSelected(videos),
             )
           : null,
-    );
-  }
-}
-
-/// Bottom bar shown in the vault's multi-select mode: Restore and Delete
-/// permanently. Mirrors SelectionActionBar's layout (used for the regular
-/// folder video list) but with vault-specific actions/labels.
-class _VaultSelectionBar extends StatelessWidget {
-  final int selectedCount;
-  final VoidCallback? onRestore;
-  final VoidCallback? onDelete;
-
-  const _VaultSelectionBar({
-    required this.selectedCount,
-    required this.onRestore,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border(top: BorderSide(color: context.colors.divider)),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onRestore,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.colors.accent,
-                    foregroundColor: context.colors.bg,
-                    disabledBackgroundColor: context.colors.divider,
-                    disabledForegroundColor: context.colors.textMuted,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: const StadiumBorder(),
-                  ),
-                  icon: const Icon(Icons.restore_rounded, size: 20),
-                  label: Text(
-                    'Restore ($selectedCount)',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onDelete,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: context.colors.divider,
-                    disabledForegroundColor: context.colors.textMuted,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: const StadiumBorder(),
-                  ),
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  label: const Text(
-                    'Delete',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -14,6 +14,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.view.WindowManager
 import android.support.v4.media.MediaMetadataCompat
 import androidx.core.content.ContextCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -150,6 +151,21 @@ class MainActivity : FlutterFragmentActivity() {
                         call.argument<Int>("width") ?: 16,
                         call.argument<Int>("height") ?: 9,
                     )
+                    result.success(null)
+                }
+
+                "setSecureScreen" -> {
+                    // Blocks screenshots/screen recording and blanks the
+                    // recent-apps thumbnail while the Secure Vault is visible.
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    if (enabled) {
+                        window.setFlags(
+                            WindowManager.LayoutParams.FLAG_SECURE,
+                            WindowManager.LayoutParams.FLAG_SECURE,
+                        )
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    }
                     result.success(null)
                 }
 

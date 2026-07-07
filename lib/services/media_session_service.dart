@@ -80,4 +80,13 @@ class MediaSessionService {
       });
     } catch (_) {}
   }
+
+  /// Toggles `FLAG_SECURE` on the activity window — blocks screenshots and
+  /// screen recording, and blanks the app's recent-apps thumbnail. Used to
+  /// shield the Secure Vault's contents from anything outside the app.
+  static Future<void> setSecureScreen(bool enabled) async {
+    try {
+      await _channel.invokeMethod('setSecureScreen', {'enabled': enabled});
+    } catch (_) {}
+  }
 }
