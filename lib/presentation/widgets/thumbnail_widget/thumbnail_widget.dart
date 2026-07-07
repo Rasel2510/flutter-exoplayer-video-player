@@ -42,6 +42,13 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   File? _thumb;
   bool _failed = false;
   StreamSubscription<String>? _updateSub;
+  int? _cacheWidth;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cacheWidth = (widget.width * MediaQuery.devicePixelRatioOf(context)).round();
+  }
 
   @override
   void initState() {
@@ -64,6 +71,9 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   @override
   void didUpdateWidget(VideoThumbnailWidget old) {
     super.didUpdateWidget(old);
+    if (old.width != widget.width) {
+      _cacheWidth = (widget.width * MediaQuery.devicePixelRatioOf(context)).round();
+    }
     if (old.videoPath != widget.videoPath) {
       setState(() {
         _thumb = null;
@@ -106,8 +116,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
             // Posters harvested from the playing engine are stored at full
             // video resolution — decode at tile size (ResizeImage never
             // upscales) so a 4K frame doesn't cost a ~30 MB bitmap per row.
-            cacheWidth:
-                (widget.width * MediaQuery.devicePixelRatioOf(context)).round(),
+            cacheWidth: _cacheWidth,
             errorBuilder: (_, __, ___) => _placeholder(context),
           ),
           const Center(

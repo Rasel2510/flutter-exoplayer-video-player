@@ -115,10 +115,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
-    final themeIcon = themeMode == ThemeMode.light 
+    final themeIcon = ref.watch(themeProvider.select((m) => m == ThemeMode.light 
         ? Icons.light_mode_rounded 
-        : (themeMode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.brightness_auto_rounded);
+        : (m == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.brightness_auto_rounded)));
 
     return PopScope(
       // We handle the root back press ourselves so audio mode can background

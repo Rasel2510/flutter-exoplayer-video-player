@@ -175,9 +175,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   /// load() returns null and they're skipped here.
   Future<void> _loadContinueWatching() async {
     final recents = await RecentFilesService.instance.getRecents();
+    final toCheck = recents.take(20).toList();
+    final positions = await Future.wait(
+      toCheck.map((vf) => PositionService.instance.load(vf.path))
+    );
+    
     final items = <ContinueWatchingItem>[];
-    for (final vf in recents) {
-      final pos = await PositionService.instance.load(vf.path);
+    for (var i = 0; i < toCheck.length; i++) {
+      final vf = toCheck[i];
+      final pos = positions[i];
       if (pos == null || pos <= Duration.zero) continue;
       final dur = vf.duration ??
           DurationCacheService.instance.getFromCacheSync(vf.path);
@@ -403,6 +409,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               storageRoots: s.storageRoots,
               newPaths: s.newPaths,
             )));
+            
+    final continueWatchingEnabled = ref.watch(continueWatchingEnabledProvider);
 
     if (isScanning && folders.isEmpty) {
       return Consumer(
@@ -435,7 +443,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final totalResults = displayFolders.length +
         (showVideoHeader ? 1 : 0) +
         matchedVideos.length;
-    final continueWatchingEnabled = ref.watch(continueWatchingEnabledProvider);
     // Continue Watching strip: only outside of search, as the first list item.
     final showContinueWatching = continueWatchingEnabled &&
         _searchQuery.isEmpty && _continueWatching.isNotEmpty;

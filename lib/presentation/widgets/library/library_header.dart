@@ -109,13 +109,17 @@ class LibraryHeader extends StatelessWidget {
                       hintText: 'Search folders…',
                       prefixIcon: Icon(Icons.search_rounded,
                           size: 18, color: context.colors.textMuted),
-                      suffixIcon: searchCtrl.text.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(Icons.clear_rounded,
-                                  size: 16, color: context.colors.textMuted),
-                              onPressed: searchCtrl.clear,
-                            )
-                          : null,
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: searchCtrl,
+                        builder: (context, value, child) {
+                          if (value.text.isEmpty) return const SizedBox.shrink();
+                          return IconButton(
+                            icon: Icon(Icons.clear_rounded,
+                                size: 16, color: context.colors.textMuted),
+                            onPressed: searchCtrl.clear,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 )

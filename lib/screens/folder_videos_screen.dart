@@ -749,17 +749,19 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
                       final hasResume =
                           savedPos != null && savedPos > Duration.zero;
                       final isNew = newPaths.contains(vf.path);
-                      return VideoCard(
-                        vf: vf,
-                        savedPos: hasResume ? savedPos : null,
-                        totalDur: _durations[vf.path],
-                        isNew: isNew,
-                        sortBy: _sortBy,
-                        selectionMode: _selectionMode,
-                        isSelected: _selectedPaths.contains(vf.path),
-                        onSelectToggle: () => _toggleSelection(vf.path),
-                        onTap: () => _openVideo(vf, sorted),
-                        onLongPress: () => _showVideoOptions(vf, sorted),
+                      return RepaintBoundary(
+                        child: VideoCard(
+                          vf: vf,
+                          savedPos: hasResume ? savedPos : null,
+                          totalDur: _durations[vf.path],
+                          isNew: isNew,
+                          sortBy: _sortBy,
+                          selectionMode: _selectionMode,
+                          isSelected: _selectedPaths.contains(vf.path),
+                          onSelectToggle: () => _toggleSelection(vf.path),
+                          onTap: () => _openVideo(vf, sorted),
+                          onLongPress: () => _showVideoOptions(vf, sorted),
+                        ),
                       );
                     },
                   ),

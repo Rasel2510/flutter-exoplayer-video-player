@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/widgets/thumbnail_widget/thumbnail_widget.dart';
-import 'presentation/widgets/player/mini_player_overlay.dart';
+import 'presentation/widgets/player/mini_player_overlay/mini_player_overlay.dart';
 import 'screens/home_screen.dart';
 
 final appNavigatorKey = GlobalKey<NavigatorState>();
