@@ -41,30 +41,24 @@ class _PlayButtonState extends State<_PlayButton>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onTap,
-      child: Container(
+      child: _GlassSurface(
         width: 62,
         height: 62,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: _kBlack70,
-          // A soft drop shadow lifts the button off bright video frames; the
-          // faint ring replaces the old harsh 1px border.
-          border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x59000000),
-              blurRadius: 18,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Center(
-          child: AnimatedIcon(
-            icon: AnimatedIcons.play_pause,
-            progress: _ctrl,
-            size: 34,
-            color: _kWhite100,
+        alignment: Alignment.center,
+        strong: true,
+        // A soft drop shadow (tint mode) lifts the button off bright frames.
+        shadow: const [
+          BoxShadow(
+            color: Color(0x59000000),
+            blurRadius: 18,
+            spreadRadius: 2,
           ),
+        ],
+        child: AnimatedIcon(
+          icon: AnimatedIcons.play_pause,
+          progress: _ctrl,
+          size: 34,
+          color: _kWhite100,
         ),
       ),
     );

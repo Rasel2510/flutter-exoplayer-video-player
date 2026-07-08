@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_video_player/presentation/providers/player_controls_style_provider.dart';
 import 'package:flutter_video_player/presentation/providers/player_provider.dart';
 import 'controls/player_controls_overlay.dart';
 
@@ -72,6 +73,7 @@ class PlayerControlsLayer extends ConsumerWidget {
         )));
     if (!isInitialized || hasError) return const SizedBox();
     final displayName = currentVideo?.name ?? fallbackFileName;
+    final controlsStyle = ref.watch(controlsStyleProvider);
 
     // Keep controls in the widget tree when hidden (opacity=0) so Flutter
     // never tears down the platform-view compositor layer.
@@ -89,6 +91,7 @@ class PlayerControlsLayer extends ConsumerWidget {
     final child = IgnorePointer(
       ignoring: !visible,
       child: PlayerControlsOverlay(
+        controlsStyle: controlsStyle,
         fileName: displayName,
         onBack: onBack,
         onTogglePlay: onTogglePlay,

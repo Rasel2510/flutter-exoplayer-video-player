@@ -29,6 +29,8 @@ class PlayerPreferencesService {
   static const _folderIconColorIndexKey = 'folder_icon_color_index_v1';
   static const _newBadgeColorIndexKey   = 'new_badge_color_index_v1';
   static const _continueWatchingEnabledKey = 'continue_watching_enabled_v1';
+  static const _controlsFrostedKey = 'player_controls_frosted_v1';
+  static const _cardTintedKey = 'library_card_tinted_v1';
 
   // ── Fit mode ──────────────────────────────────────────────────────────────
 
@@ -105,6 +107,8 @@ class PlayerPreferencesService {
       _folderIconColorIndexCache = p.getInt(_folderIconColorIndexKey) ?? 0;
       _newBadgeColorIndexCache = p.getInt(_newBadgeColorIndexKey) ?? 0;
       _continueWatchingEnabledCache = p.getBool(_continueWatchingEnabledKey) ?? true;
+      _controlsFrostedCache = p.getBool(_controlsFrostedKey) ?? false;
+      _cardTintedCache = p.getBool(_cardTintedKey) ?? false;
     } catch (_) {}
   }
 
@@ -182,6 +186,30 @@ class PlayerPreferencesService {
   Future<void> saveContinueWatchingEnabled(bool enabled) async {
     _continueWatchingEnabledCache = enabled;
     try { await (await _p).setBool(_continueWatchingEnabledKey, enabled); } catch (_) {}
+  }
+
+  // ── Player controls style (frosted glass vs black tint) ───────────────────
+  // Synchronously-readable so the player applies the saved style on the very
+  // first frame instead of flashing the default. Warmed by [preload].
+  // false = black tint (default), true = frosted glass.
+
+  bool _controlsFrostedCache = false;
+  bool get controlsFrostedCached => _controlsFrostedCache;
+
+  Future<void> saveControlsFrosted(bool frosted) async {
+    _controlsFrostedCache = frosted;
+    try { await (await _p).setBool(_controlsFrostedKey, frosted); } catch (_) {}
+  }
+
+  // ── Library card style (tinted glass vs standard surface) ─────────────────
+  // false = standard opaque cards (default), true = tinted-glass cards.
+
+  bool _cardTintedCache = false;
+  bool get cardTintedCached => _cardTintedCache;
+
+  Future<void> saveCardTinted(bool tinted) async {
+    _cardTintedCache = tinted;
+    try { await (await _p).setBool(_cardTintedKey, tinted); } catch (_) {}
   }
 
   // ── Library appearance (folder icon color / new-badge color) ──────────────

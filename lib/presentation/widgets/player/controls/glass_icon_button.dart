@@ -47,15 +47,10 @@ class _GlassIconButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: filled
-          ? Container(
+          ? _GlassSurface(
               width: 40,
               height: 40,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: _kBlack40,
-                border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
-              ),
               child: iconWidget,
             )
           : Padding(

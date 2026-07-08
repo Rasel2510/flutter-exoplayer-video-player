@@ -92,26 +92,24 @@ class _TopBar extends ConsumerWidget {
             ],
           ),
 
-          // ── Row 2: action buttons — grouped in one floating glass pill ──
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: _kBlack40,
+          // ── Row 2: action buttons — grouped in one floating glass pill.
+          // The pill is the single glass surface; the icons/chips inside draw
+          // no fill of their own (so frosted mode does one blur, not twelve).
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _GlassSurface(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: _kWhite12),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                reverse: false,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  reverse: false,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
                     // Playback speed
-                    _MiniChip(label: speedLabel, onTap: onShowSpeed),
+                    _MiniChip(label: speedLabel, onTap: onShowSpeed, bare: true),
                     const SizedBox(width: 6),
                     // Volume
                     _GlassIconButton(
@@ -165,6 +163,7 @@ class _TopBar extends ConsumerWidget {
                       label: abState == 1 ? 'A•' : 'A-B',
                       onTap: onCycleAbRepeat,
                       color: abState == 0 ? null : context.colors.accent,
+                      bare: true,
                     ),
                     const SizedBox(width: 6),
                     // Repeat / loop
@@ -188,7 +187,8 @@ class _TopBar extends ConsumerWidget {
                         Navigator.pop(context);
                       },
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

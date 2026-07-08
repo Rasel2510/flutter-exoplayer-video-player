@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
 import 'package:flutter_video_player/presentation/providers/continue_watching_provider.dart';
 import 'package:flutter_video_player/presentation/providers/library_appearance_provider.dart';
+import 'package:flutter_video_player/presentation/providers/library_card_style_provider.dart';
+import 'package:flutter_video_player/presentation/providers/player_controls_style_provider.dart';
 import 'package:flutter_video_player/presentation/screens/vault_pin_screen.dart';
 import 'package:flutter_video_player/presentation/screens/vault_screen.dart';
 import 'package:flutter_video_player/data/services/vault_pin_service.dart';
@@ -21,6 +23,10 @@ class MenuSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cwEnabled = ref.watch(continueWatchingEnabledProvider);
+    final frosted =
+        ref.watch(controlsStyleProvider) == PlayerControlsStyle.frosted;
+    final tintedCards =
+        ref.watch(cardStyleProvider) == LibraryCardStyle.tinted;
     final appearance = ref.watch(libraryAppearanceProvider);
     final appearanceNotifier = ref.read(libraryAppearanceProvider.notifier);
 
@@ -179,7 +185,130 @@ class MenuSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            
+
+            // Frosted player controls toggle. Off = flat black tint (default),
+            // on = real backdrop-blur glass behind the player buttons.
+            InkWell(
+              onTap: () {
+                ref.read(controlsStyleProvider.notifier).toggle();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      frosted ? Icons.blur_on_rounded : Icons.blur_off_rounded,
+                      color: frosted
+                          ? context.colors.accent
+                          : context.colors.textSecondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Frosted player controls',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: frosted
+                                  ? context.colors.textPrimary
+                                  : context.colors.textSecondary,
+                              fontWeight:
+                                  frosted ? FontWeight.w500 : FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Blur the video behind the player buttons',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.colors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IgnorePointer(
+                      child: Switch(
+                        value: frosted,
+                        onChanged: (_) {},
+                        activeThumbColor: context.colors.surface,
+                        activeTrackColor: context.colors.accent,
+                        inactiveThumbColor: context.colors.surface,
+                        inactiveTrackColor: context.colors.border,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Tinted card style toggle. Off = standard opaque cards (default),
+            // on = translucent glass folder/video cards.
+            InkWell(
+              onTap: () {
+                ref.read(cardStyleProvider.notifier).toggle();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      tintedCards
+                          ? Icons.dashboard_rounded
+                          : Icons.dashboard_outlined,
+                      color: tintedCards
+                          ? context.colors.accent
+                          : context.colors.textSecondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tinted card style',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: tintedCards
+                                  ? context.colors.textPrimary
+                                  : context.colors.textSecondary,
+                              fontWeight: tintedCards
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Glassy translucent folder & video cards',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.colors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IgnorePointer(
+                      child: Switch(
+                        value: tintedCards,
+                        onChanged: (_) {},
+                        activeThumbColor: context.colors.surface,
+                        activeTrackColor: context.colors.accent,
+                        inactiveThumbColor: context.colors.surface,
+                        inactiveTrackColor: context.colors.border,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             Divider(color: context.colors.divider, height: 1),
 
             // Folder icon color. themeDefault matches what FolderCard actually
@@ -255,19 +384,32 @@ class _AccentColorRow extends StatelessWidget {
           // Horizontally scrollable so the swatch strip never overflows the
           // row, no matter how many presets libraryAccentPresets grows to —
           // mirrors the font-chip strip in the subtitle appearance sheet.
-          SizedBox(
-            height: 26,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              itemCount: libraryAccentPresets.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () => onSelect(i),
-                child: _Swatch(
-                  color: resolveLibraryAccent(i, themeDefault),
-                  isTheme: libraryAccentPresets[i].color == null,
-                  selected: selectedIndex == i,
+          // The right edge fades out (ShaderMask) so it's obvious at a glance
+          // that more swatches scroll in — a plain clipped strip gives no hint.
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.white, Colors.white, Colors.transparent],
+              stops: [0.0, 0.9, 1.0],
+            ).createShader(bounds),
+            blendMode: BlendMode.dstIn,
+            child: SizedBox(
+              height: 26,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                // Trailing pad so the last swatch can scroll clear of the fade.
+                padding: const EdgeInsets.only(right: 28),
+                itemCount: libraryAccentPresets.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) => GestureDetector(
+                  onTap: () => onSelect(i),
+                  child: _Swatch(
+                    color: resolveLibraryAccent(i, themeDefault),
+                    isTheme: libraryAccentPresets[i].color == null,
+                    selected: selectedIndex == i,
+                  ),
                 ),
               ),
             ),

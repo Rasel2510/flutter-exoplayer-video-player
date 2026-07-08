@@ -3,7 +3,7 @@ import 'package:flutter_video_player/core/theme/app_theme.dart';
 import 'package:flutter_video_player/core/utils/duration_formatter.dart';
 import 'package:flutter_video_player/data/models/video_file.dart';
 import 'package:flutter_video_player/presentation/widgets/common/thumbnail_widget.dart';
-import 'package:flutter_video_player/presentation/widgets/common/animated_squish_card.dart';
+import 'package:flutter_video_player/presentation/widgets/common/tintable_card.dart';
 import 'format_badge.dart';
 import 'new_video_badge.dart';
 import 'sort_option.dart';
@@ -62,17 +62,10 @@ class VideoCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: AnimatedSquishCard(
-        child: Material(
-          color: context.colors.surface,
-          borderRadius: AppRadius.md,
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: selectionMode ? onSelectToggle : onTap,
-            onLongPress: selectionMode ? onSelectToggle : onLongPress,
-            splashColor: context.colors.accentSoft,
-            highlightColor: Colors.transparent,
-            child: Column(
+      child: TintableCard(
+        onTap: selectionMode ? onSelectToggle : onTap,
+        onLongPress: selectionMode ? onSelectToggle : onLongPress,
+        child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
@@ -181,8 +174,6 @@ class VideoCard extends StatelessWidget {
                   ),
               ],
             ),
-          ),
-        ),
       ),
     );
   }

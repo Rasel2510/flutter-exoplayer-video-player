@@ -30,17 +30,12 @@ class _SeekPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: _GlassSurface(
         width: 46,
         height: 46,
         alignment: Alignment.center,
         // Glass circle — matches the play button beside it so the whole
         // center cluster reads as one control group.
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: _kBlack40,
-          border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
-        ),
         child: val == 15
           // Custom fallback for 15s since Icons.forward_15 doesn't exist natively.
           ? Column(

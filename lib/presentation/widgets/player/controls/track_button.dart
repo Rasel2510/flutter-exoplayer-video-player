@@ -11,15 +11,10 @@ class _TrackButton extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
         onTap: enabled ? onTap : null,
         behavior: HitTestBehavior.opaque,
-        child: Container(
+        child: _GlassSurface(
           width: 42,
           height: 42,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: _kBlack40,
-            border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
-          ),
           child: Icon(icon, size: 26, color: enabled ? _kWhite90 : _kWhite12),
         ),
       );
