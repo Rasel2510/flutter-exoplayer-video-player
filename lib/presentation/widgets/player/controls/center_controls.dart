@@ -1,4 +1,4 @@
-part of '../player_controls_overlay.dart';
+part of 'player_controls_overlay.dart';
 
 class _CenterControls extends ConsumerWidget {
   final VoidCallback onTogglePlay;

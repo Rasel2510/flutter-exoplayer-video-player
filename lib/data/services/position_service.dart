@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/utils/cache_key.dart';
+import 'package:flutter_video_player/core/utils/cache_key.dart';
 import 'duration_cache_service.dart';
 
 /// Saves and restores the last playback position for each video file.

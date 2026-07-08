@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import '../core/constants.dart';
+import 'package:flutter_video_player/core/constants.dart';
 
 /// Receives videos opened from outside the app (Android "Open with" / VIEW
 /// intents). Used by the home screen to jump straight into the player.

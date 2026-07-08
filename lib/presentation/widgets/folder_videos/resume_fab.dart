@@ -1,4 +1,4 @@
-import '../../../core/utils/duration_formatter.dart';
+import 'package:flutter_video_player/core/utils/duration_formatter.dart';
 import 'package:flutter/material.dart';
 
 class ResumeFab extends StatelessWidget {

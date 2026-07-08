@@ -5,12 +5,12 @@ import 'dart:isolate';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/video_file.dart';
-import '../../models/video_folder.dart';
-import '../../services/duration_cache_service.dart';
-import '../../services/folder_scanner.dart';
-import '../../services/media_store_service.dart';
-import '../../services/player_preferences_service.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/data/models/video_folder.dart';
+import 'package:flutter_video_player/data/services/duration_cache_service.dart';
+import 'package:flutter_video_player/data/services/folder_scanner.dart';
+import 'package:flutter_video_player/data/services/media_store_service.dart';
+import 'package:flutter_video_player/data/services/player_preferences_service.dart';
 import 'scan_mode_provider.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 

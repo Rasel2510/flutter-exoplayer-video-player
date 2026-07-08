@@ -40,7 +40,12 @@ class TrackSnapshot {
 class VideoSize {
   final int width;
   final int height;
-  const VideoSize(this.width, this.height);
+  // Clockwise degrees (0/90/180/270) the display still needs to apply — set
+  // for engines (ExoPlayer) that render into a raw Surface without
+  // auto-rotating for a video's rotation metadata. Engines that already
+  // display upright (media_kit) leave this at 0.
+  final int rotation;
+  const VideoSize(this.width, this.height, [this.rotation = 0]);
   static const zero = VideoSize(0, 0);
 }
 

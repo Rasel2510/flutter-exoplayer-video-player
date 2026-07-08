@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
-import 'package:flutter_video_player/models/video_folder.dart';
-import '../../providers/library_appearance_provider.dart';
-import '../animated_squish_card.dart';
+import 'package:flutter_video_player/data/models/video_folder.dart';
+import 'package:flutter_video_player/presentation/providers/library_appearance_provider.dart';
+import 'package:flutter_video_player/presentation/widgets/common/animated_squish_card.dart';
 import 'new_badge.dart';
 import 'resume_pill.dart';
 

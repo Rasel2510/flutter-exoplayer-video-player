@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/player_preferences_service.dart';
+import 'package:flutter_video_player/data/services/player_preferences_service.dart';
 
 /// Preset colors for the folder icon and the "NEW" badge. Index 0 is "Theme"
 /// (color: null) — it tracks the app's current light/dark accent instead of a

@@ -1,4 +1,4 @@
-part of '../subtitle_sheet.dart';
+part of 'subtitle_sheet.dart';
 
 class _StepButton extends StatelessWidget {
   final IconData icon;

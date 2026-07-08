@@ -1,4 +1,4 @@
-part of '../scan_mode_sheet.dart';
+part of 'scan_mode_sheet.dart';
 
 class _ModeRow extends StatelessWidget {
   final LibraryScanMode mode;

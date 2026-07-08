@@ -1,4 +1,4 @@
-part of '../player_controls_overlay.dart';
+part of 'player_controls_overlay.dart';
 
 class _MinimalistSlider extends StatelessWidget {
   final double value;
@@ -15,15 +15,22 @@ class _MinimalistSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.colors.accent;
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        trackHeight: 2.5,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+        trackHeight: 3,
+        thumbShape: const RoundSliderThumbShape(
+          enabledThumbRadius: 6.5,
+          elevation: 3,
+          pressedElevation: 6,
+        ),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
         thumbColor: _kWhite100,
-        activeTrackColor: _kWhite100,
+        // Accent-colored progress reads instantly against the white-on-black
+        // chrome and matches the rest of the app's accent usage.
+        activeTrackColor: accent,
         inactiveTrackColor: _kWhite30,
-        overlayColor: _kWhite12,
+        overlayColor: accent.withValues(alpha: 0.18),
       ),
       child: Slider(
         value: value,

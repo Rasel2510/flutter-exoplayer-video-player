@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/video_file.dart';
-import '../../services/vault_service.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/data/services/vault_service.dart';
 import 'folders_provider.dart';
 
 final vaultProvider = StateNotifierProvider<VaultNotifier, List<VideoFile>>((ref) {

@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
-import '../core/constants.dart';
-import '../models/video_file.dart';
+import 'package:flutter_video_player/core/constants.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
 
 /// Dart side of the native MediaStore bridge (Android only).
 ///

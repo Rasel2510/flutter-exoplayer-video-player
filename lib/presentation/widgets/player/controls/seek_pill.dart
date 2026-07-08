@@ -1,4 +1,4 @@
-part of '../player_controls_overlay.dart';
+part of 'player_controls_overlay.dart';
 
 class _SeekPill extends StatelessWidget {
   final int seconds;
@@ -30,25 +30,34 @@ class _SeekPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: val == 15 
+      child: Container(
+        width: 46,
+        height: 46,
+        alignment: Alignment.center,
+        // Glass circle — matches the play button beside it so the whole
+        // center cluster reads as one control group.
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: _kBlack40,
+          border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
+        ),
+        child: val == 15
           // Custom fallback for 15s since Icons.forward_15 doesn't exist natively.
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   isForward ? Icons.fast_forward_rounded : Icons.fast_rewind_rounded,
-                  size: 28,
-                  color: _kWhite60,
+                  size: 22,
+                  color: _kWhite90,
                 ),
-                const Text('15', style: TextStyle(color: _kWhite60, fontSize: 10, fontWeight: FontWeight.bold, height: 1)),
+                const Text('15', style: TextStyle(color: _kWhite90, fontSize: 9, fontWeight: FontWeight.bold, height: 1)),
               ],
             )
           : Icon(
               iconData,
-              size: 36,
-              color: _kWhite60,
+              size: 28,
+              color: _kWhite90,
             ),
       ),
     );

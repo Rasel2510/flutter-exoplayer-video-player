@@ -6,7 +6,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/video_file.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
 
 class VaultService {
   VaultService._();

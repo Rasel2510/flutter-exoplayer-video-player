@@ -79,8 +79,11 @@ class ExoPlayerEngine implements PlayerEngine {
       case 'rate':
         _rate.add((event['value'] as num).toDouble());
       case 'videoSize':
-        _videoSize
-            .add(VideoSize(event['width'] as int, event['height'] as int));
+        _videoSize.add(VideoSize(
+          event['width'] as int,
+          event['height'] as int,
+          event['rotation'] as int? ?? 0,
+        ));
       case 'completed':
         _completed.add(null);
       case 'error':

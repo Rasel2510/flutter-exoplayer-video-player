@@ -1,4 +1,4 @@
-part of '../player_controls_overlay.dart';
+part of 'player_controls_overlay.dart';
 
 class _GlassIconButton extends StatelessWidget {
   final IconData icon;
@@ -8,6 +8,12 @@ class _GlassIconButton extends StatelessWidget {
   final bool boosted;
   final LoopMode? loopMode;
 
+  /// Draws the icon inside a translucent glass circle — used for the
+  /// standalone buttons (lock / PiP / rotate) so they read as tappable
+  /// against any video frame. Left off inside the top action pill, where
+  /// the shared pill background already does that job.
+  final bool filled;
+
   const _GlassIconButton({
     required this.icon,
     required this.size,
@@ -15,6 +21,7 @@ class _GlassIconButton extends StatelessWidget {
     this.active = false,
     this.boosted = false,
     this.loopMode,
+    this.filled = false,
   });
 
   // Inlined as a method so the expression is evaluated once per build,
@@ -35,15 +42,26 @@ class _GlassIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconWidget = Icon(icon, size: size, color: _getIconColor(context));
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, size: size, color: _getIconColor(context)),
-      ),
+      child: filled
+          ? Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: _kBlack40,
+                border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
+              ),
+              child: iconWidget,
+            )
+          : Padding(
+              padding: const EdgeInsets.all(8),
+              child: iconWidget,
+            ),
     );
   }
 }
-
-

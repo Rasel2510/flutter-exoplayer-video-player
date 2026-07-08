@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/player_provider.dart';
-import 'seek_flash.dart';
+import 'package:flutter_video_player/presentation/providers/player_provider.dart';
+import 'overlays/seek_flash.dart';
 
 class PlayerGestureLayer extends ConsumerStatefulWidget {
   final Widget child;
@@ -87,8 +87,14 @@ class _PlayerGestureLayerState extends ConsumerState<PlayerGestureLayer>
 
     return Stack(
       children: [
-        // Gesture layer
+        // Gesture layer. `opaque` so taps register everywhere in this layer's
+        // bounds — including the black letterbox/pillarbox bars around a
+        // video that doesn't fill the screen (e.g. a portrait video in
+        // landscape) — instead of the default `deferToChild`, which only
+        // counts a tap as "hit" where an actual painted descendant sits under
+        // it. Without this, tapping the black bars silently did nothing.
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             if (!_swipeActive && !_isPinching) {
               controlsVisible

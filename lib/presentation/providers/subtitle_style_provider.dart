@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/player_preferences_service.dart';
+import 'package:flutter_video_player/data/services/player_preferences_service.dart';
 
 /// Preset subtitle text colors. The index into this list is what gets
 /// persisted (so adding presets later won't shift anyone's saved choice as

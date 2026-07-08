@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/player_preferences_service.dart';
+import 'package:flutter_video_player/data/services/player_preferences_service.dart';
 
 final continueWatchingEnabledProvider = StateNotifierProvider<ContinueWatchingEnabledNotifier, bool>((ref) {
   return ContinueWatchingEnabledNotifier();

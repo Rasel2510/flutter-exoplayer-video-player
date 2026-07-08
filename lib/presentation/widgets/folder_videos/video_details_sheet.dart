@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
-import 'package:flutter_video_player/models/video_file.dart';
-import '../../../core/utils/duration_formatter.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/core/utils/duration_formatter.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
 /// Bottom-sheet showing a video's metadata (name, format, size, duration, date,
 /// path). Pure presentation — pass the known [duration] (null shows "Unknown").

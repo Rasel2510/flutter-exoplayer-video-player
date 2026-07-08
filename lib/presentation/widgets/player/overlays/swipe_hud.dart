@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/volume_color.dart';
-import '../../providers/player_provider.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/utils/volume_color.dart';
+import 'package:flutter_video_player/presentation/providers/player_provider.dart';
 
 class SwipeHud extends StatelessWidget {
   final SwipeGesture gesture;

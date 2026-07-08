@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../engine/player_engine.dart';
-import '../../../providers/subtitle_style_provider.dart';
-import '../../common/sheet_surface.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/data/engines/player_engine.dart';
+import 'package:flutter_video_player/presentation/providers/subtitle_style_provider.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
-part 'widgets/delay_control.dart';
-part 'widgets/appearance_control.dart';
-part 'widgets/step_button.dart';
+part 'delay_control.dart';
+part 'appearance_control.dart';
+part 'subtitle_step_button.dart';
 
 class SubtitleSheet extends StatelessWidget {
   final List<MediaTrack> tracks;

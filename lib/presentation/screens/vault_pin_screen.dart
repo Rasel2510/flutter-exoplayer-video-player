@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
-import '../services/secure_screen_guard.dart';
-import '../services/vault_pin_service.dart';
-import '../services/vault_service.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/data/services/secure_screen_guard.dart';
+import 'package:flutter_video_player/data/services/vault_pin_service.dart';
+import 'package:flutter_video_player/data/services/vault_service.dart';
 
 enum VaultPinMode { create, unlock }
 

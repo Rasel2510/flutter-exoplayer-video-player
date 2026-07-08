@@ -1,4 +1,4 @@
-part of '../subtitle_sheet.dart';
+part of 'subtitle_sheet.dart';
 
 class _AppearanceControl extends ConsumerWidget {
   const _AppearanceControl();

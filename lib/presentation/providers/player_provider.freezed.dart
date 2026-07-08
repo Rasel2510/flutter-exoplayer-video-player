@@ -57,6 +57,9 @@ mixin _$PlayerState {
       throw _privateConstructorUsedError; // Last known video dimensions (for PiP aspect ratio).
   int get videoWidth => throw _privateConstructorUsedError;
   int get videoHeight =>
+      throw _privateConstructorUsedError; // Clockwise degrees the ExoPlayer texture still needs rotating by to
+// display upright (0 for media_kit, which already renders upright).
+  int get videoRotation =>
       throw _privateConstructorUsedError; // Sleep timer: wall-clock time at which playback auto-pauses (null = off).
   DateTime? get sleepTimerEndsAt =>
       throw _privateConstructorUsedError; // Sleep timer variant: pause when the current video finishes.
@@ -127,6 +130,7 @@ abstract class $PlayerStateCopyWith<$Res> {
       String currentCue,
       int videoWidth,
       int videoHeight,
+      int videoRotation,
       DateTime? sleepTimerEndsAt,
       bool sleepTimerEndOfVideo,
       double subtitleDelay,
@@ -188,6 +192,7 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
     Object? currentCue = null,
     Object? videoWidth = null,
     Object? videoHeight = null,
+    Object? videoRotation = null,
     Object? sleepTimerEndsAt = freezed,
     Object? sleepTimerEndOfVideo = null,
     Object? subtitleDelay = null,
@@ -339,6 +344,10 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
           ? _value.videoHeight
           : videoHeight // ignore: cast_nullable_to_non_nullable
               as int,
+      videoRotation: null == videoRotation
+          ? _value.videoRotation
+          : videoRotation // ignore: cast_nullable_to_non_nullable
+              as int,
       sleepTimerEndsAt: freezed == sleepTimerEndsAt
           ? _value.sleepTimerEndsAt
           : sleepTimerEndsAt // ignore: cast_nullable_to_non_nullable
@@ -423,6 +432,7 @@ abstract class _$$PlayerStateImplCopyWith<$Res>
       String currentCue,
       int videoWidth,
       int videoHeight,
+      int videoRotation,
       DateTime? sleepTimerEndsAt,
       bool sleepTimerEndOfVideo,
       double subtitleDelay,
@@ -482,6 +492,7 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
     Object? currentCue = null,
     Object? videoWidth = null,
     Object? videoHeight = null,
+    Object? videoRotation = null,
     Object? sleepTimerEndsAt = freezed,
     Object? sleepTimerEndOfVideo = null,
     Object? subtitleDelay = null,
@@ -633,6 +644,10 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
           ? _value.videoHeight
           : videoHeight // ignore: cast_nullable_to_non_nullable
               as int,
+      videoRotation: null == videoRotation
+          ? _value.videoRotation
+          : videoRotation // ignore: cast_nullable_to_non_nullable
+              as int,
       sleepTimerEndsAt: freezed == sleepTimerEndsAt
           ? _value.sleepTimerEndsAt
           : sleepTimerEndsAt // ignore: cast_nullable_to_non_nullable
@@ -712,6 +727,7 @@ class _$PlayerStateImpl extends _PlayerState {
       this.currentCue = '',
       this.videoWidth = 16,
       this.videoHeight = 9,
+      this.videoRotation = 0,
       this.sleepTimerEndsAt,
       this.sleepTimerEndOfVideo = false,
       this.subtitleDelay = 0.0,
@@ -850,6 +866,11 @@ class _$PlayerStateImpl extends _PlayerState {
   @override
   @JsonKey()
   final int videoHeight;
+// Clockwise degrees the ExoPlayer texture still needs rotating by to
+// display upright (0 for media_kit, which already renders upright).
+  @override
+  @JsonKey()
+  final int videoRotation;
 // Sleep timer: wall-clock time at which playback auto-pauses (null = off).
   @override
   final DateTime? sleepTimerEndsAt;
@@ -888,7 +909,7 @@ class _$PlayerStateImpl extends _PlayerState {
 
   @override
   String toString() {
-    return 'PlayerState(isInitialized: $isInitialized, isPlaying: $isPlaying, intendsToPlay: $intendsToPlay, controlsVisible: $controlsVisible, isPipMode: $isPipMode, rotationMode: $rotationMode, isSeeking: $isSeeking, seekValue: $seekValue, position: $position, duration: $duration, volume: $volume, brightness: $brightness, playbackSpeed: $playbackSpeed, fitMode: $fitMode, audioTracks: $audioTracks, selectedAudioTrack: $selectedAudioTrack, audioEnabled: $audioEnabled, swipeGesture: $swipeGesture, swipeValue: $swipeValue, folderVideos: $folderVideos, currentIndex: $currentIndex, subtitleTracks: $subtitleTracks, selectedSubtitleTrack: $selectedSubtitleTrack, subtitlesEnabled: $subtitlesEnabled, isLocked: $isLocked, lockIconVisible: $lockIconVisible, hasError: $hasError, errorMessage: $errorMessage, autoPlayCountdown: $autoPlayCountdown, zoomScale: $zoomScale, loopMode: $loopMode, textureId: $textureId, currentCue: $currentCue, videoWidth: $videoWidth, videoHeight: $videoHeight, sleepTimerEndsAt: $sleepTimerEndsAt, sleepTimerEndOfVideo: $sleepTimerEndOfVideo, subtitleDelay: $subtitleDelay, holdFastForward: $holdFastForward, abRepeatStart: $abRepeatStart, abRepeatEnd: $abRepeatEnd, seekInterval: $seekInterval, isMiniPlayerActive: $isMiniPlayerActive, hasEnded: $hasEnded)';
+    return 'PlayerState(isInitialized: $isInitialized, isPlaying: $isPlaying, intendsToPlay: $intendsToPlay, controlsVisible: $controlsVisible, isPipMode: $isPipMode, rotationMode: $rotationMode, isSeeking: $isSeeking, seekValue: $seekValue, position: $position, duration: $duration, volume: $volume, brightness: $brightness, playbackSpeed: $playbackSpeed, fitMode: $fitMode, audioTracks: $audioTracks, selectedAudioTrack: $selectedAudioTrack, audioEnabled: $audioEnabled, swipeGesture: $swipeGesture, swipeValue: $swipeValue, folderVideos: $folderVideos, currentIndex: $currentIndex, subtitleTracks: $subtitleTracks, selectedSubtitleTrack: $selectedSubtitleTrack, subtitlesEnabled: $subtitlesEnabled, isLocked: $isLocked, lockIconVisible: $lockIconVisible, hasError: $hasError, errorMessage: $errorMessage, autoPlayCountdown: $autoPlayCountdown, zoomScale: $zoomScale, loopMode: $loopMode, textureId: $textureId, currentCue: $currentCue, videoWidth: $videoWidth, videoHeight: $videoHeight, videoRotation: $videoRotation, sleepTimerEndsAt: $sleepTimerEndsAt, sleepTimerEndOfVideo: $sleepTimerEndOfVideo, subtitleDelay: $subtitleDelay, holdFastForward: $holdFastForward, abRepeatStart: $abRepeatStart, abRepeatEnd: $abRepeatEnd, seekInterval: $seekInterval, isMiniPlayerActive: $isMiniPlayerActive, hasEnded: $hasEnded)';
   }
 
   @override
@@ -964,6 +985,8 @@ class _$PlayerStateImpl extends _PlayerState {
                 other.videoWidth == videoWidth) &&
             (identical(other.videoHeight, videoHeight) ||
                 other.videoHeight == videoHeight) &&
+            (identical(other.videoRotation, videoRotation) ||
+                other.videoRotation == videoRotation) &&
             (identical(other.sleepTimerEndsAt, sleepTimerEndsAt) ||
                 other.sleepTimerEndsAt == sleepTimerEndsAt) &&
             (identical(other.sleepTimerEndOfVideo, sleepTimerEndOfVideo) ||
@@ -1022,6 +1045,7 @@ class _$PlayerStateImpl extends _PlayerState {
         currentCue,
         videoWidth,
         videoHeight,
+        videoRotation,
         sleepTimerEndsAt,
         sleepTimerEndOfVideo,
         subtitleDelay,
@@ -1079,6 +1103,7 @@ abstract class _PlayerState extends PlayerState {
       final String currentCue,
       final int videoWidth,
       final int videoHeight,
+      final int videoRotation,
       final DateTime? sleepTimerEndsAt,
       final bool sleepTimerEndOfVideo,
       final double subtitleDelay,
@@ -1164,7 +1189,10 @@ abstract class _PlayerState extends PlayerState {
   @override
   int get videoWidth;
   @override
-  int get videoHeight; // Sleep timer: wall-clock time at which playback auto-pauses (null = off).
+  int get videoHeight; // Clockwise degrees the ExoPlayer texture still needs rotating by to
+// display upright (0 for media_kit, which already renders upright).
+  @override
+  int get videoRotation; // Sleep timer: wall-clock time at which playback auto-pauses (null = off).
   @override
   DateTime?
       get sleepTimerEndsAt; // Sleep timer variant: pause when the current video finishes.

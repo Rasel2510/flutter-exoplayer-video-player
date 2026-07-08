@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import '../core/constants.dart';
+import 'package:flutter_video_player/core/constants.dart';
 
 /// Manages Android media session (lock screen controls) via platform channel.
 class MediaSessionService {

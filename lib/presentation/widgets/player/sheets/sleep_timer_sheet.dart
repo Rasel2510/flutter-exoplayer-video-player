@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/duration_formatter.dart';
-import '../../../providers/player_provider.dart';
-import '../../common/sheet_surface.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/utils/duration_formatter.dart';
+import 'package:flutter_video_player/presentation/providers/player_provider.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
-part 'widgets/step_button.dart';
+part 'sleep_timer_step_button.dart';
 
 /// Bottom sheet to set a sleep timer (auto-pause after a delay or at end of
 /// video). Reads/drives the player provider directly and ticks once a second

@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/duration_formatter.dart';
-import '../../../providers/player_provider.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/utils/duration_formatter.dart';
+import 'package:flutter_video_player/presentation/providers/player_provider.dart';
 
-part 'widgets/top_bar.dart';
-part 'widgets/center_controls.dart';
-part 'widgets/play_button.dart';
-part 'widgets/seek_pill.dart';
-part 'widgets/track_button.dart';
-part 'widgets/bottom_bar.dart';
-part 'widgets/playback_progress_controls.dart';
-part 'widgets/bottom_bar_actions.dart';
-part 'widgets/minimalist_slider.dart';
-part 'widgets/glass_icon_button.dart';
-part 'widgets/mini_chip.dart';
-part 'widgets/player_chip.dart';
-part 'widgets/seek_button.dart';
+part 'top_bar.dart';
+part 'center_controls.dart';
+part 'play_button.dart';
+part 'seek_pill.dart';
+part 'track_button.dart';
+part 'bottom_bar.dart';
+part 'playback_progress_controls.dart';
+part 'bottom_bar_actions.dart';
+part 'minimalist_slider.dart';
+part 'glass_icon_button.dart';
+part 'mini_chip.dart';
+part 'player_chip.dart';
+part 'seek_button.dart';
 
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const _kWhite100 = Colors.white;
+const _kWhite90 = Color(0xE6FFFFFF);
 const _kWhite60 = Color(0x99FFFFFF);
 const _kWhite30 = Color(0x4DFFFFFF);
 const _kWhite12 = Color(0x1FFFFFFF);
@@ -84,12 +85,15 @@ class PlayerControlsOverlay extends StatelessWidget {
 
   // FIX #OPT-12: Static const gradient widgets — these decorations never change
   // so creating a new Container on every build() call is wasted allocation.
+  // Three stops give an eased falloff — the old two-stop scrim faded
+  // linearly, which reads as a visible hard band over bright frames.
   static const _kTopGradient = DecoratedBox(
     decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xCC000000), Colors.transparent],
+        colors: [Color(0xD9000000), Color(0x4D000000), Colors.transparent],
+        stops: [0.0, 0.55, 1.0],
       ),
     ),
   );
@@ -99,7 +103,8 @@ class PlayerControlsOverlay extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
-        colors: [Color(0xCC000000), Colors.transparent],
+        colors: [Color(0xD9000000), Color(0x4D000000), Colors.transparent],
+        stops: [0.0, 0.55, 1.0],
       ),
     ),
   );

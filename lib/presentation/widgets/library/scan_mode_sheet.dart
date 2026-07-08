@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../providers/scan_mode_provider.dart';
-import '../../common/sheet_surface.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/presentation/providers/scan_mode_provider.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
-part 'widgets/mode_row.dart';
+part 'mode_row.dart';
 
 /// Bottom sheet to choose how the library discovers videos (Android only).
 class ScanModeSheet extends StatelessWidget {

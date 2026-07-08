@@ -1,8 +1,8 @@
 import 'package:path/path.dart' as p;
 import 'dart:io';
 import 'dart:isolate';
-import '../models/video_file.dart';
-import '../models/video_folder.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/data/models/video_folder.dart';
 
 class FolderScanner {
   /// Scans [rootPath] recursively and groups videos by folder, using an isolate.

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/video_file.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
 
 class RecentFilesService {
   RecentFilesService._();

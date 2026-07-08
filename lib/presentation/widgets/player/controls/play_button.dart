@@ -1,4 +1,4 @@
-part of '../player_controls_overlay.dart';
+part of 'player_controls_overlay.dart';
 
 class _PlayButton extends StatefulWidget {
   final bool isPlaying;
@@ -42,18 +42,27 @@ class _PlayButtonState extends State<_PlayButton>
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
+        width: 62,
+        height: 62,
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: _kBlack70,
-          border: Border.all(color: _kWhite30, width: 1),
+          // A soft drop shadow lifts the button off bright video frames; the
+          // faint ring replaces the old harsh 1px border.
+          border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x59000000),
+              blurRadius: 18,
+              spreadRadius: 2,
+            ),
+          ],
         ),
         child: Center(
           child: AnimatedIcon(
             icon: AnimatedIcons.play_pause,
             progress: _ctrl,
-            size: 30,
+            size: 34,
             color: _kWhite100,
           ),
         ),

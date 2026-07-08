@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
 class SpeedSheet extends StatefulWidget {
   final double currentSpeed;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 import 'vault_option_row.dart';
 
 /// The vault's settings menu — Change PIN and Auto-lock timer. Opened from

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../providers/continue_watching_provider.dart';
-import '../../providers/library_appearance_provider.dart';
-import '../../../screens/vault_pin_screen.dart';
-import '../../../screens/vault_screen.dart';
-import '../../../services/vault_pin_service.dart';
-import '../common/sheet_surface.dart';
-import '../smooth_page_route.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/presentation/providers/continue_watching_provider.dart';
+import 'package:flutter_video_player/presentation/providers/library_appearance_provider.dart';
+import 'package:flutter_video_player/presentation/screens/vault_pin_screen.dart';
+import 'package:flutter_video_player/presentation/screens/vault_screen.dart';
+import 'package:flutter_video_player/data/services/vault_pin_service.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
+import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 
 /// A beautiful bottom sheet for app settings and overflow actions.
 class MenuSheet extends ConsumerWidget {

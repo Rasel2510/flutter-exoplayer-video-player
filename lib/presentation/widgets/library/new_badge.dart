@@ -1,7 +1,7 @@
-import '../../../core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/library_appearance_provider.dart';
+import 'package:flutter_video_player/presentation/providers/library_appearance_provider.dart';
 
 class NewBadge extends ConsumerWidget {
   const NewBadge({super.key});

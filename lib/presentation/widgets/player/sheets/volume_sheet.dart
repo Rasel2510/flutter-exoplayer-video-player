@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/volume_color.dart';
-import '../../common/sheet_surface.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/utils/volume_color.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
-part 'widgets/preset_button.dart';
+part 'preset_button.dart';
 
 class VolumeSheet extends StatefulWidget {
   final double volume; // 0.0 – 200.0

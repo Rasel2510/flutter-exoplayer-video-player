@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-import '../core/utils/cache_key.dart';
+import 'package:flutter_video_player/core/utils/cache_key.dart';
 import 'media_store_service.dart';
 import 'software_probe_service.dart';
 

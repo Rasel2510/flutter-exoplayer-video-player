@@ -1,4 +1,4 @@
-import '../core/utils/file_size_formatter.dart';
+import 'package:flutter_video_player/core/utils/file_size_formatter.dart';
 import 'package:path/path.dart' as p;
 import 'video_file.dart';
 

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/utils/cache_key.dart';
-import '../engine/exoplayer_engine.dart';
-import '../models/video_file.dart';
+import 'package:flutter_video_player/core/utils/cache_key.dart';
+import 'package:flutter_video_player/data/engines/exoplayer_engine.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
 import 'software_probe_service.dart';
 
 /// Probes and caches video duration via the native MediaMetadataRetriever.

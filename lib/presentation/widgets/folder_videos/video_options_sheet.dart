@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
-import 'package:flutter_video_player/models/video_file.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 import 'option_row.dart';
 
 class VideoOptionsSheet extends StatelessWidget {

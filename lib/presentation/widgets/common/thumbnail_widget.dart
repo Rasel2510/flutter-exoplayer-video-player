@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../services/thumbnail_service.dart';
-import '../../../core/utils/duration_formatter.dart';
+import 'package:flutter_video_player/data/services/thumbnail_service.dart';
+import 'package:flutter_video_player/core/utils/duration_formatter.dart';
 
 // ── Shared shimmer ────────────────────────────────────────────────────────────
 //
@@ -18,7 +18,7 @@ import '../../../core/utils/duration_formatter.dart';
 
 /// Place this once above any screen that shows [VideoThumbnailWidget].
 /// It vends a single [Animation<double>] to all shimmer consumers below it.
-part 'widgets/shimmer_scope.dart';
+part 'shimmer_scope.dart';
 
 class VideoThumbnailWidget extends StatefulWidget {
   final String videoPath;

@@ -1,4 +1,4 @@
-part of '../player_controls_overlay.dart';
+part of 'player_controls_overlay.dart';
 
 class _TrackButton extends StatelessWidget {
   final IconData icon;
@@ -11,9 +11,16 @@ class _TrackButton extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
         onTap: enabled ? onTap : null,
         behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Icon(icon, size: 34, color: enabled ? _kWhite60 : _kWhite12),
+        child: Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: _kBlack40,
+            border: Border.fromBorderSide(BorderSide(color: _kWhite12)),
+          ),
+          child: Icon(icon, size: 26, color: enabled ? _kWhite90 : _kWhite12),
         ),
       );
 }

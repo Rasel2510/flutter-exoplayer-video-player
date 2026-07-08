@@ -1,4 +1,4 @@
-part of '../thumbnail_widget.dart';
+part of 'thumbnail_widget.dart';
 
 class ShimmerScope extends StatefulWidget {
   final Widget child;

@@ -379,11 +379,25 @@ class ExoPlayerPlugin(
         }
 
         override fun onVideoSizeChanged(size: VideoSize) {
-            // Size the producer to the real frame so the texture renders crisply.
             if (size.width > 0 && size.height > 0) {
                 surfaceProducer.setSize(size.width, size.height)
             }
-            send(mapOf("event" to "videoSize", "width" to size.width, "height" to size.height))
+            // size.width/height are already rotation-corrected display dims
+            // (720x1280 for a portrait phone recording). But the frame CONTENT
+            // Flutter samples is still sideways: MediaCodec "applies" rotation
+            // only via a SurfaceTexture transform matrix, which Flutter's
+            // texture path ignores — and size.unappliedRotationDegrees is
+            // always 0 on this path, so it can't be used to detect this.
+            // The container's real rotation metadata lives on the Format;
+            // send it so Dart can upright the content with a RotatedBox
+            // (same approach as the official video_player plugin).
+            val rotation = player.videoFormat?.rotationDegrees ?: 0
+            send(mapOf(
+                "event" to "videoSize",
+                "width" to size.width,
+                "height" to size.height,
+                "rotation" to rotation,
+            ))
         }
 
         override fun onRenderedFirstFrame() {

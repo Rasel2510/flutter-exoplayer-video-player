@@ -4,17 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import '../../engine/player_engine.dart';
-import '../../engine/exoplayer_engine.dart';
-import '../../engine/media_kit_engine.dart';
-import '../../models/video_file.dart';
-import '../../services/brightness_service.dart';
-import '../../services/duration_cache_service.dart';
-import '../../services/media_session_service.dart';
-import '../../services/player_preferences_service.dart';
-import '../../services/position_service.dart';
-import '../../services/thumbnail_service.dart';
-import '../../services/volume_service.dart';
+import 'package:flutter_video_player/data/engines/player_engine.dart';
+import 'package:flutter_video_player/data/engines/exoplayer_engine.dart';
+import 'package:flutter_video_player/data/engines/media_kit_engine.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/data/services/brightness_service.dart';
+import 'package:flutter_video_player/data/services/duration_cache_service.dart';
+import 'package:flutter_video_player/data/services/media_session_service.dart';
+import 'package:flutter_video_player/data/services/player_preferences_service.dart';
+import 'package:flutter_video_player/data/services/position_service.dart';
+import 'package:flutter_video_player/data/services/thumbnail_service.dart';
+import 'package:flutter_video_player/data/services/volume_service.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'player_provider.freezed.dart';
@@ -107,6 +107,9 @@ class PlayerState with _$PlayerState {
     // Last known video dimensions (for PiP aspect ratio).
     @Default(16) int videoWidth,
     @Default(9) int videoHeight,
+    // Clockwise degrees the ExoPlayer texture still needs rotating by to
+    // display upright (0 for media_kit, which already renders upright).
+    @Default(0) int videoRotation,
     // Sleep timer: wall-clock time at which playback auto-pauses (null = off).
     DateTime? sleepTimerEndsAt,
     // Sleep timer variant: pause when the current video finishes.
@@ -488,7 +491,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _subs.add(engine.videoSizeStream.listen((size) {
       if (size.width > 0 && size.height > 0) {
         state = state.copyWith(
-            videoWidth: size.width, videoHeight: size.height);
+            videoWidth: size.width,
+            videoHeight: size.height,
+            videoRotation: size.rotation);
         markReady();
       }
     }));

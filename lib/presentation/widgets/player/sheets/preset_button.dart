@@ -1,4 +1,4 @@
-part of '../volume_sheet.dart';
+part of 'volume_sheet.dart';
 
 class _PresetButton extends StatelessWidget {
   final String label;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/track_labels.dart';
-import '../../../engine/player_engine.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/utils/track_labels.dart';
+import 'package:flutter_video_player/data/engines/player_engine.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
 class AudioTrackSheet extends StatelessWidget {
   final List<MediaTrack> tracks;

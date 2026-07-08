@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/player_provider.dart';
+import 'package:flutter_video_player/presentation/providers/player_provider.dart';
 
 class ZoomIndicatorOverlay extends ConsumerStatefulWidget {
   const ZoomIndicatorOverlay({super.key});

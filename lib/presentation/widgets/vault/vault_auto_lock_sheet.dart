@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
-import '../../../services/vault_settings_service.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/data/services/vault_settings_service.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 
 /// Duration picker for the vault's auto-lock timer — presets plus a
 /// plus/minus stepper for any custom number of minutes (mirrors

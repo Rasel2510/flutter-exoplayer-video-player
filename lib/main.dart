@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'app.dart';
-import 'services/player_preferences_service.dart';
-import 'services/volume_service.dart';
+import 'data/services/player_preferences_service.dart';
+import 'data/services/volume_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

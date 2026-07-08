@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/duration_formatter.dart';
-import '../../../models/video_file.dart';
-import '../thumbnail_widget/thumbnail_widget.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/utils/duration_formatter.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/presentation/widgets/common/thumbnail_widget.dart';
 
 /// One partially-watched video surfaced in the Continue Watching row:
 /// the recents entry joined with its saved position and (when known) duration.

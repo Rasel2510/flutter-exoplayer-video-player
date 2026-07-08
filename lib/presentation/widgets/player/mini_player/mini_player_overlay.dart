@@ -3,12 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_video_player/presentation/providers/player_provider.dart';
-import 'package:flutter_video_player/screens/player_screen.dart';
-import 'package:flutter_video_player/presentation/widgets/smooth_page_route.dart';
+import 'package:flutter_video_player/presentation/screens/player_screen.dart';
+import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 import 'package:flutter_video_player/app.dart';
-import 'widgets/mini_controls_row.dart';
-import 'widgets/mini_progress_bar.dart';
-import 'widgets/yt_mini_button.dart';
+import 'mini_controls_row.dart';
+import 'mini_progress_bar.dart';
+import 'yt_mini_button.dart';
 
 class MiniPlayerOverlay extends ConsumerStatefulWidget {
   final Widget child;
@@ -176,6 +176,7 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
       :textureId,
       :videoWidth,
       :videoHeight,
+      :videoRotation,
       :seekInterval,
       :folderVideos,
       :currentIndex,
@@ -185,6 +186,7 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
           textureId: s.textureId,
           videoWidth: s.videoWidth > 0 ? s.videoWidth : 16,
           videoHeight: s.videoHeight > 0 ? s.videoHeight : 9,
+          videoRotation: s.videoRotation,
           seekInterval: s.seekInterval,
           folderVideos: s.folderVideos,
           currentIndex: s.currentIndex,
@@ -338,13 +340,29 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
                 fit: StackFit.expand,
                 children: [
                   // ── Live Video ──
+                  // The Texture is laid out at the pre-rotation (swapped)
+                  // size and uprighted with a RotatedBox — same correction
+                  // as PlayerVideoLayer: videoWidth/videoHeight are already
+                  // rotation-corrected, but the raw frame content Flutter
+                  // samples is not. The FittedBox works here (unlike the
+                  // main player's old Center-wrapped one) because
+                  // StackFit.expand gives it tight window-sized constraints.
                   if (textureId != null)
                     FittedBox(
                       fit: BoxFit.contain,
-                      child: SizedBox(
-                        width: videoWidth.toDouble(),
-                        height: videoHeight.toDouble(),
-                        child: Texture(textureId: textureId),
+                      child: RotatedBox(
+                        quarterTurns: (videoRotation ~/ 90) % 4,
+                        child: SizedBox(
+                          width: ((videoRotation ~/ 90).isOdd
+                                  ? videoHeight
+                                  : videoWidth)
+                              .toDouble(),
+                          height: ((videoRotation ~/ 90).isOdd
+                                  ? videoWidth
+                                  : videoHeight)
+                              .toDouble(),
+                          child: Texture(textureId: textureId),
+                        ),
                       ),
                     )
                   else

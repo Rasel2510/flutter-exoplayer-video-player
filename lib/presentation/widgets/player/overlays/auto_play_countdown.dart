@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:flutter_video_player/core/theme/app_theme.dart';
 
 class AutoPlayCountdown extends StatelessWidget {
   final int countdown;

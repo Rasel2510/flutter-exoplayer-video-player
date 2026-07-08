@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
 import 'package:flutter_video_player/core/utils/duration_formatter.dart';
-import 'package:flutter_video_player/models/video_file.dart';
-import '../thumbnail_widget/thumbnail_widget.dart';
-import '../animated_squish_card.dart';
+import 'package:flutter_video_player/data/models/video_file.dart';
+import 'package:flutter_video_player/presentation/widgets/common/thumbnail_widget.dart';
+import 'package:flutter_video_player/presentation/widgets/common/animated_squish_card.dart';
 import 'format_badge.dart';
 import 'new_video_badge.dart';
 import 'sort_option.dart';

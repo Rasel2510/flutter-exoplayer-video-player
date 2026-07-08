@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_video_player/core/theme/app_theme.dart';
-import '../common/sheet_surface.dart';
+import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.dart';
 import 'sort_option.dart';
 
 class SortSheet extends StatelessWidget {

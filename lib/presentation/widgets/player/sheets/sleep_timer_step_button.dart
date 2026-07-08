@@ -1,4 +1,4 @@
-part of '../sleep_timer_sheet.dart';
+part of 'sleep_timer_sheet.dart';
 
 class _StepButton extends StatelessWidget {
   final IconData icon;
