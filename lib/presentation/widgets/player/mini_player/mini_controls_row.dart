@@ -26,6 +26,36 @@ class MiniControlsRow extends ConsumerWidget {
     required this.onShowControls,
   });
 
+  Widget _buildSeekButtonContent({
+    required bool isForward,
+    required IconData fallbackIcon,
+    required double size,
+  }) {
+    if (seekInterval == 15) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isForward ? Icons.fast_forward_rounded : Icons.fast_rewind_rounded,
+            size: size * 0.8,
+            color: Colors.white,
+          ),
+          const Text(
+            '15',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              height: 1,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Icon(fallbackIcon, size: size, color: Colors.white);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (:intendsToPlay, :hasEnded, :hasPrevious, :hasNext) = ref.watch(
@@ -91,7 +121,6 @@ class MiniControlsRow extends ConsumerWidget {
       children: [
         // Skip back
         YtMiniButton(
-          icon: replayIcon,
           size: 22 * iconScale,
           onTap: () {
             ref
@@ -99,13 +128,16 @@ class MiniControlsRow extends ConsumerWidget {
                 .seekRelative(-seekInterval, revealControls: false);
             onShowControls();
           },
+          child: _buildSeekButtonContent(
+            isForward: false,
+            fallbackIcon: replayIcon,
+            size: 22 * iconScale,
+          ),
         ),
         const SizedBox(width: 4),
         // Play / Pause
         YtMiniButton(
-          icon: intendsToPlay
-              ? Icons.pause_rounded
-              : Icons.play_arrow_rounded,
+          icon: intendsToPlay ? Icons.pause_rounded : Icons.play_arrow_rounded,
           size: 32 * iconScale,
           onTap: () {
             ref.read(playerProvider.notifier).togglePlay();
@@ -115,7 +147,6 @@ class MiniControlsRow extends ConsumerWidget {
         const SizedBox(width: 4),
         // Skip forward
         YtMiniButton(
-          icon: forwardIcon,
           size: 22 * iconScale,
           onTap: () {
             ref
@@ -123,6 +154,11 @@ class MiniControlsRow extends ConsumerWidget {
                 .seekRelative(seekInterval, revealControls: false);
             onShowControls();
           },
+          child: _buildSeekButtonContent(
+            isForward: true,
+            fallbackIcon: forwardIcon,
+            size: 22 * iconScale,
+          ),
         ),
       ],
     );
