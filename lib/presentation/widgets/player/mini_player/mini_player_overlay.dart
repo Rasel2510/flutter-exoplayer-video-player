@@ -5,12 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_video_player/presentation/providers/player_controls_style_provider.dart';
 import 'package:flutter_video_player/presentation/providers/player_provider.dart';
 import 'package:flutter_video_player/presentation/screens/player_screen.dart';
-import 'package:flutter_video_player/presentation/widgets/common/glass_surface.dart';
 import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 import 'package:flutter_video_player/app.dart';
-import 'mini_controls_row.dart';
-import 'mini_progress_bar.dart';
-import 'yt_mini_button.dart';
+import 'mini_player_surface.dart';
 
 class MiniPlayerOverlay extends ConsumerStatefulWidget {
   final Widget child;
@@ -334,124 +331,32 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
                 _showControls();
               }
             },
-            child: Material(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(12),
-              elevation: 10,
-              shadowColor: Colors.black87,
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // ── Live Video ──
-                  // The Texture is laid out at the pre-rotation (swapped)
-                  // size and uprighted with a RotatedBox — same correction
-                  // as PlayerVideoLayer: videoWidth/videoHeight are already
-                  // rotation-corrected, but the raw frame content Flutter
-                  // samples is not. The FittedBox works here (unlike the
-                  // main player's old Center-wrapped one) because
-                  // StackFit.expand gives it tight window-sized constraints.
-                  if (textureId != null)
-                    FittedBox(
-                      fit: BoxFit.contain,
-                      child: RotatedBox(
-                        quarterTurns: (videoRotation ~/ 90) % 4,
-                        child: SizedBox(
-                          width: ((videoRotation ~/ 90).isOdd
-                                  ? videoHeight
-                                  : videoWidth)
-                              .toDouble(),
-                          height: ((videoRotation ~/ 90).isOdd
-                                  ? videoWidth
-                                  : videoHeight)
-                              .toDouble(),
-                          child: Texture(textureId: textureId),
-                        ),
-                      ),
-                    )
-                  else
-                    const Center(
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white54),
-                    ),
-
-                  // ── Controls overlay ──
-                  // Matches the main player's frosted/tint setting so the
-                  // mini-player's scrim doesn't look stuck in the old flat
-                  // look when the user turns Frosted controls on. Wrapped in
-                  // its own BackdropGroup — this is the only glass surface in
-                  // this small window, so there's nothing else to batch with.
-                  AnimatedOpacity(
-                    opacity: _controlsVisible ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: IgnorePointer(
-                      ignoring: !_controlsVisible,
-                      child: BackdropGroup(
-                        child: GlassSurface(
-                        style: frosted ? GlassStyle.frosted : GlassStyle.tint,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Stack(
-                          children: [
-                            // Close (×) — top left
-                            Positioned(
-                              top: -6,
-                              left: -6,
-                              child: YtMiniButton(
-                                icon: Icons.close_rounded,
-                                size: 18 * iconScale,
-                                onTap: () =>
-                                    ref.read(playerProvider.notifier).dispose(),
-                              ),
-                            ),
-                            // Expand — top right
-                            Positioned(
-                              top: -6,
-                              right: -6,
-                              child: YtMiniButton(
-                                icon: Icons.fullscreen_rounded,
-                                size: 24 * iconScale,
-                                onTap: () {
-                                  _hideTimer?.cancel();
-                                  appNavigatorKey.currentState?.push(
-                                    SmoothPageRoute(
-                                      child: PlayerScreen(
-                                        filePath: video.path,
-                                        fileName: video.name,
-                                        folderVideos: folderVideos,
-                                        initialIndex: currentIndex,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            // Center: skip back / play-pause / skip forward
-                            Center(
-                              child: MiniControlsRow(
-                                seekInterval: seekInterval,
-                                replayIcon: replayIcon,
-                                forwardIcon: forwardIcon,
-                                iconScale: iconScale,
-                                onShowControls: _showControls,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+            child: MiniPlayerSurface(
+              textureId: textureId,
+              videoWidth: videoWidth,
+              videoHeight: videoHeight,
+              videoRotation: videoRotation,
+              controlsVisible: _controlsVisible,
+              frosted: frosted,
+              iconScale: iconScale,
+              seekInterval: seekInterval,
+              replayIcon: replayIcon,
+              forwardIcon: forwardIcon,
+              onClose: () => ref.read(playerProvider.notifier).dispose(),
+              onExpand: () {
+                _hideTimer?.cancel();
+                appNavigatorKey.currentState?.push(
+                  SmoothPageRoute(
+                    child: PlayerScreen(
+                      filePath: video.path,
+                      fileName: video.name,
+                      folderVideos: folderVideos,
+                      initialIndex: currentIndex,
                     ),
                   ),
-                  ),
-
-                  // ── Progress bar — isolated Consumer, rebuilds every second ──
-                  if (!_controlsVisible)
-                    const Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: MiniProgressBarConsumer(),
-                    ),
-                ],
-              ),
+                );
+              },
+              onShowControls: _showControls,
             ),
           ),
         ),

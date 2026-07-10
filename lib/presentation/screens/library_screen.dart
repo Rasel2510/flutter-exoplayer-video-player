@@ -21,6 +21,7 @@ import 'package:flutter_video_player/presentation/widgets/library/no_results.dar
 import 'package:flutter_video_player/presentation/widgets/library/permission_prompt.dart';
 import 'package:flutter_video_player/presentation/widgets/library/scanning_screen.dart';
 import 'package:flutter_video_player/presentation/widgets/library/search_video_row.dart';
+import 'package:flutter_video_player/presentation/widgets/library/folder_resume.dart';
 import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 import 'player_screen.dart';
 
@@ -52,7 +53,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   String? _matchedForQuery;
   List<VideoFolder>? _matchedForFolders;
 
-  final Map<String, _FolderResume?> _folderResumes = {};
+  final Map<String, FolderResume?> _folderResumes = {};
 
   // "Continue Watching" strip data: recents joined with saved resume points.
   List<ContinueWatchingItem> _continueWatching = const [];
@@ -284,7 +285,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     });
   }
 
-  Future<_FolderResume?> _findLastWatched(VideoFolder folder) async {
+  Future<FolderResume?> _findLastWatched(VideoFolder folder) async {
     final futures = folder.videos.map((vf) async {
       final pos = await PositionService.instance.load(vf.path);
       return (vf, pos);
@@ -300,7 +301,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         }
       }
     }
-    return best != null ? _FolderResume(best, bestPos!) : null;
+    return best != null ? FolderResume(best, bestPos!) : null;
   }
 
   void _openFolder(VideoFolder folder) {
@@ -318,7 +319,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     });
   }
 
-  Future<void> _resumeFolder(VideoFolder folder, _FolderResume resume) async {
+  Future<void> _resumeFolder(VideoFolder folder, FolderResume resume) async {
     await RecentFilesService.instance.addRecent(resume.video);
     if (!mounted) return;
     await Navigator.push(
@@ -544,13 +545,5 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       ],
     );
   }
-}
-
-// ── Data ──────────────────────────────────────────────────────────────────────
-
-class _FolderResume {
-  final VideoFile video;
-  final Duration position;
-  const _FolderResume(this.video, this.position);
 }
 
