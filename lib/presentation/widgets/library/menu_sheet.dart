@@ -12,7 +12,7 @@ import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.d
 import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 
 /// A beautiful bottom sheet for app settings and overflow actions.
-class MenuSheet extends ConsumerWidget {
+class MenuSheet extends StatelessWidget {
   final VoidCallback onOpenFile;
 
   const MenuSheet({
@@ -21,15 +21,7 @@ class MenuSheet extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cwEnabled = ref.watch(continueWatchingEnabledProvider);
-    final frosted =
-        ref.watch(controlsStyleProvider) == PlayerControlsStyle.frosted;
-    final tintedCards =
-        ref.watch(cardStyleProvider) == LibraryCardStyle.tinted;
-    final appearance = ref.watch(libraryAppearanceProvider);
-    final appearanceNotifier = ref.read(libraryAppearanceProvider.notifier);
-
+  Widget build(BuildContext context) {
     return SheetSurface(
       child: SingleChildScrollView(
         child: Column(
@@ -55,9 +47,9 @@ class MenuSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             Divider(color: context.colors.divider, height: 1),
-            
+
             // Open File action
             InkWell(
               onTap: () {
@@ -85,7 +77,7 @@ class MenuSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            
+
             // Secure Vault action. Gated by the vault's OWN PIN (set up on
             // first visit), not the device's screen-lock credential — see
             // VaultPinScreen. The PIN screen is pushed on top of this still-open
@@ -131,182 +123,60 @@ class MenuSheet extends ConsumerWidget {
                 ),
               ),
             ),
-            
-            // Continue Watching toggle
-            InkWell(
-              onTap: () {
-                ref.read(continueWatchingEnabledProvider.notifier).toggle();
+
+            // Each toggle below watches only its own provider inside its own
+            // Consumer, so flipping one switch rebuilds just that row instead
+            // of the whole sheet (including the two accent-color rows below).
+            Consumer(
+              builder: (context, ref, _) {
+                final enabled = ref.watch(continueWatchingEnabledProvider);
+                return _SettingsToggleRow(
+                  icon: Icons.history_toggle_off_rounded,
+                  activeIcon: Icons.history_rounded,
+                  label: 'Continue Watching',
+                  subtitle: 'Show your recently watched videos',
+                  value: enabled,
+                  onToggle: () => ref
+                      .read(continueWatchingEnabledProvider.notifier)
+                      .toggle(),
+                );
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      cwEnabled ? Icons.history_rounded : Icons.history_toggle_off_rounded,
-                      color: cwEnabled ? context.colors.accent : context.colors.textSecondary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Continue Watching',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: cwEnabled ? context.colors.textPrimary : context.colors.textSecondary,
-                              fontWeight: cwEnabled ? FontWeight.w500 : FontWeight.w400,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Show your recently watched videos',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.colors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IgnorePointer(
-                      child: Switch(
-                        value: cwEnabled,
-                        onChanged: (_) {},
-                        activeThumbColor: context.colors.surface,
-                        activeTrackColor: context.colors.accent,
-                        inactiveThumbColor: context.colors.surface,
-                        inactiveTrackColor: context.colors.border,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
 
-            // Frosted player controls toggle. Off = flat black tint (default),
-            // on = real backdrop-blur glass behind the player buttons.
-            InkWell(
-              onTap: () {
-                ref.read(controlsStyleProvider.notifier).toggle();
+            // Off = flat black tint (default), on = real backdrop-blur glass
+            // behind the player buttons.
+            Consumer(
+              builder: (context, ref, _) {
+                final frosted = ref.watch(controlsStyleProvider) ==
+                    PlayerControlsStyle.frosted;
+                return _SettingsToggleRow(
+                  icon: Icons.blur_off_rounded,
+                  activeIcon: Icons.blur_on_rounded,
+                  label: 'Frosted player controls',
+                  subtitle: 'Blur the video behind the player buttons',
+                  value: frosted,
+                  onToggle: () =>
+                      ref.read(controlsStyleProvider.notifier).toggle(),
+                );
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      frosted ? Icons.blur_on_rounded : Icons.blur_off_rounded,
-                      color: frosted
-                          ? context.colors.accent
-                          : context.colors.textSecondary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Frosted player controls',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: frosted
-                                  ? context.colors.textPrimary
-                                  : context.colors.textSecondary,
-                              fontWeight:
-                                  frosted ? FontWeight.w500 : FontWeight.w400,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Blur the video behind the player buttons',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.colors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IgnorePointer(
-                      child: Switch(
-                        value: frosted,
-                        onChanged: (_) {},
-                        activeThumbColor: context.colors.surface,
-                        activeTrackColor: context.colors.accent,
-                        inactiveThumbColor: context.colors.surface,
-                        inactiveTrackColor: context.colors.border,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
 
-            // Tinted card style toggle. Off = standard opaque cards (default),
-            // on = translucent glass folder/video cards.
-            InkWell(
-              onTap: () {
-                ref.read(cardStyleProvider.notifier).toggle();
+            // Off = standard opaque cards (default), on = translucent glass
+            // folder/video cards.
+            Consumer(
+              builder: (context, ref, _) {
+                final tinted =
+                    ref.watch(cardStyleProvider) == LibraryCardStyle.tinted;
+                return _SettingsToggleRow(
+                  icon: Icons.dashboard_outlined,
+                  activeIcon: Icons.dashboard_rounded,
+                  label: 'Tinted card style',
+                  subtitle: 'Glassy translucent folder & video cards',
+                  value: tinted,
+                  onToggle: () =>
+                      ref.read(cardStyleProvider.notifier).toggle(),
+                );
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      tintedCards
-                          ? Icons.dashboard_rounded
-                          : Icons.dashboard_outlined,
-                      color: tintedCards
-                          ? context.colors.accent
-                          : context.colors.textSecondary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tinted card style',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: tintedCards
-                                  ? context.colors.textPrimary
-                                  : context.colors.textSecondary,
-                              fontWeight: tintedCards
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Glassy translucent folder & video cards',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.colors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IgnorePointer(
-                      child: Switch(
-                        value: tintedCards,
-                        onChanged: (_) {},
-                        activeThumbColor: context.colors.surface,
-                        activeTrackColor: context.colors.accent,
-                        inactiveThumbColor: context.colors.surface,
-                        inactiveTrackColor: context.colors.border,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
 
             Divider(color: context.colors.divider, height: 1),
@@ -314,27 +184,121 @@ class MenuSheet extends ConsumerWidget {
             // Folder icon color. themeDefault matches what FolderCard actually
             // falls back to for the "Theme" preset, so the preview ring here
             // shows the same color the icon renders — not a generic accent.
-            _AccentColorRow(
-              label: 'Folder icon color',
-              selectedIndex: appearance.folderIconColorIndex,
-              themeDefault: context.colors.folderIcon,
-              onSelect: appearanceNotifier.setFolderIconColorIndex,
-              leadingBuilder: (color) =>
-                  Icon(Icons.folder_rounded, color: color, size: 22),
+            // Watches only its own field of libraryAppearanceProvider, so
+            // picking a new badge color doesn't also rebuild this row.
+            Consumer(
+              builder: (context, ref, _) {
+                final index = ref.watch(libraryAppearanceProvider
+                    .select((a) => a.folderIconColorIndex));
+                return _AccentColorRow(
+                  label: 'Folder icon color',
+                  selectedIndex: index,
+                  themeDefault: context.colors.folderIcon,
+                  onSelect: ref
+                      .read(libraryAppearanceProvider.notifier)
+                      .setFolderIconColorIndex,
+                  leadingBuilder: (color) =>
+                      Icon(Icons.folder_rounded, color: color, size: 22),
+                );
+              },
             ),
 
             // New badge color. Same themeDefault as NewBadge/NewVideoBadge use.
-            _AccentColorRow(
-              label: 'New badge color',
-              selectedIndex: appearance.newBadgeColorIndex,
-              themeDefault: context.colors.folderIcon,
-              onSelect: appearanceNotifier.setNewBadgeColorIndex,
-              // Preview the actual NEW badge chip rather than a generic icon
-              // so this row shows exactly what folder/video lists render.
-              leadingBuilder: (color) => _NewBadgePreview(color: color),
+            Consumer(
+              builder: (context, ref, _) {
+                final index = ref.watch(libraryAppearanceProvider
+                    .select((a) => a.newBadgeColorIndex));
+                return _AccentColorRow(
+                  label: 'New badge color',
+                  selectedIndex: index,
+                  themeDefault: context.colors.folderIcon,
+                  onSelect: ref
+                      .read(libraryAppearanceProvider.notifier)
+                      .setNewBadgeColorIndex,
+                  // Preview the actual NEW badge chip rather than a generic
+                  // icon so this row shows exactly what folder/video lists
+                  // render.
+                  leadingBuilder: (color) => _NewBadgePreview(color: color),
+                );
+              },
             ),
 
             SizedBox(height: 16 + MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A settings row with a leading icon, a label + subtitle, and a trailing
+/// switch. Shared by every boolean toggle in this sheet (Continue Watching,
+/// Frosted player controls, Tinted card style) so they render identically
+/// from one definition instead of three copy-pasted blocks.
+class _SettingsToggleRow extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final String subtitle;
+  final bool value;
+  final VoidCallback onToggle;
+
+  const _SettingsToggleRow({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.subtitle,
+    required this.value,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Icon(
+              value ? activeIcon : icon,
+              color: value ? context.colors.accent : context.colors.textSecondary,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: value
+                          ? context.colors.textPrimary
+                          : context.colors.textSecondary,
+                      fontWeight: value ? FontWeight.w500 : FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            IgnorePointer(
+              child: Switch(
+                value: value,
+                onChanged: (_) {},
+                activeThumbColor: context.colors.surface,
+                activeTrackColor: context.colors.accent,
+                inactiveThumbColor: context.colors.surface,
+                inactiveTrackColor: context.colors.border,
+              ),
+            ),
           ],
         ),
       ),
@@ -346,7 +310,7 @@ class MenuSheet extends ConsumerWidget {
 /// on the left, a horizontally scrollable strip of color swatches on the
 /// right. Mirrors the color-preset pickers already used in the subtitle
 /// appearance sheet.
-class _AccentColorRow extends StatelessWidget {
+class _AccentColorRow extends StatefulWidget {
   final String label;
   final int selectedIndex;
   final Color themeDefault;
@@ -362,7 +326,59 @@ class _AccentColorRow extends StatelessWidget {
   });
 
   @override
+  State<_AccentColorRow> createState() => _AccentColorRowState();
+}
+
+class _AccentColorRowState extends State<_AccentColorRow> {
+  final _scrollController = ScrollController();
+  // Only fade the trailing edge when the strip actually has more to scroll
+  // to — otherwise a layout wide enough to show every preset (tablets,
+  // landscape) would dim the last swatch even though nothing is hidden.
+  bool _canScroll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_updateCanScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateCanScroll());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_updateCanScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateCanScroll() {
+    if (!_scrollController.hasClients) return;
+    final canScroll = _scrollController.position.maxScrollExtent > 0;
+    if (canScroll != _canScroll) setState(() => _canScroll = canScroll);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final strip = SizedBox(
+      height: 26,
+      child: ListView.separated(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        // Trailing pad so the last swatch can scroll clear of the fade.
+        padding: EdgeInsets.only(right: _canScroll ? 28 : 0),
+        itemCount: libraryAccentPresets.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => GestureDetector(
+          onTap: () => widget.onSelect(i),
+          child: _Swatch(
+            color: resolveLibraryAccent(i, widget.themeDefault),
+            isTheme: libraryAccentPresets[i].color == null,
+            selected: widget.selectedIndex == i,
+          ),
+        ),
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Column(
@@ -370,11 +386,12 @@ class _AccentColorRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              leadingBuilder(resolveLibraryAccent(selectedIndex, themeDefault)),
+              widget.leadingBuilder(
+                  resolveLibraryAccent(widget.selectedIndex, widget.themeDefault)),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
-                  label,
+                  widget.label,
                   style: TextStyle(fontSize: 15, color: context.colors.textPrimary),
                 ),
               ),
@@ -383,37 +400,22 @@ class _AccentColorRow extends StatelessWidget {
           const SizedBox(height: 12),
           // Horizontally scrollable so the swatch strip never overflows the
           // row, no matter how many presets libraryAccentPresets grows to —
-          // mirrors the font-chip strip in the subtitle appearance sheet.
-          // The right edge fades out (ShaderMask) so it's obvious at a glance
-          // that more swatches scroll in — a plain clipped strip gives no hint.
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [Colors.white, Colors.white, Colors.transparent],
-              stops: [0.0, 0.9, 1.0],
-            ).createShader(bounds),
-            blendMode: BlendMode.dstIn,
-            child: SizedBox(
-              height: 26,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                // Trailing pad so the last swatch can scroll clear of the fade.
-                padding: const EdgeInsets.only(right: 28),
-                itemCount: libraryAccentPresets.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, i) => GestureDetector(
-                  onTap: () => onSelect(i),
-                  child: _Swatch(
-                    color: resolveLibraryAccent(i, themeDefault),
-                    isTheme: libraryAccentPresets[i].color == null,
-                    selected: selectedIndex == i,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          // mirrors the font-chip strip in the subtitle appearance sheet. The
+          // right edge fades out (ShaderMask) only while there's still more
+          // to scroll to, so it's a real "more content" hint rather than a
+          // permanent dimming of the last swatch.
+          _canScroll
+              ? ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Colors.white, Colors.white, Colors.transparent],
+                    stops: [0.0, 0.9, 1.0],
+                  ).createShader(bounds),
+                  blendMode: BlendMode.dstIn,
+                  child: strip,
+                )
+              : strip,
         ],
       ),
     );

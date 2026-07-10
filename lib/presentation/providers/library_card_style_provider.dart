@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_video_player/data/services/player_preferences_service.dart';
+import 'bool_preference_notifier.dart';
 
 /// Visual material used for the folder/video cards in the library. [standard]
 /// is the default opaque surface; [tinted] gives them a translucent
@@ -7,23 +8,12 @@ import 'package:flutter_video_player/data/services/player_preferences_service.da
 /// controls. User-selectable in the Settings sheet.
 enum LibraryCardStyle { standard, tinted }
 
-final cardStyleProvider =
-    StateNotifierProvider<CardStyleNotifier, LibraryCardStyle>((ref) {
-  return CardStyleNotifier();
+final cardStyleProvider = StateNotifierProvider<
+    BoolPreferenceNotifier<LibraryCardStyle>, LibraryCardStyle>((ref) {
+  return BoolPreferenceNotifier<LibraryCardStyle>(
+    initial: PlayerPreferencesService.instance.cardTintedCached,
+    fromBool: (v) => v ? LibraryCardStyle.tinted : LibraryCardStyle.standard,
+    toBool: (s) => s == LibraryCardStyle.tinted,
+    save: PlayerPreferencesService.instance.saveCardTinted,
+  );
 });
-
-class CardStyleNotifier extends StateNotifier<LibraryCardStyle> {
-  CardStyleNotifier()
-      : super(PlayerPreferencesService.instance.cardTintedCached
-            ? LibraryCardStyle.tinted
-            : LibraryCardStyle.standard);
-
-  bool get isTinted => state == LibraryCardStyle.tinted;
-
-  Future<void> setTinted(bool tinted) async {
-    state = tinted ? LibraryCardStyle.tinted : LibraryCardStyle.standard;
-    await PlayerPreferencesService.instance.saveCardTinted(tinted);
-  }
-
-  Future<void> toggle() => setTinted(!isTinted);
-}

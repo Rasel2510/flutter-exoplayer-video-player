@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_video_player/presentation/providers/player_controls_style_provider.dart';
+import 'package:flutter_video_player/presentation/widgets/common/glass_surface.dart';
 
-class LockOverlay extends StatelessWidget {
+class LockOverlay extends ConsumerWidget {
   final VoidCallback onUnlock;
 
   const LockOverlay({super.key, required this.onUnlock});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final frosted =
+        ref.watch(controlsStyleProvider) == PlayerControlsStyle.frosted;
     return SafeArea(
       child: Align(
         alignment: Alignment.centerLeft,
@@ -14,14 +19,9 @@ class LockOverlay extends StatelessWidget {
           padding: const EdgeInsets.only(left: 20),
           child: GestureDetector(
             onTap: onUnlock,
-            child: Container(
+            child: GlassSurface(
+              style: frosted ? GlassStyle.frosted : GlassStyle.tint,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xA6000000),
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: const Color(0x40FFFFFF), width: 1),
-              ),
               child: const Icon(
                 Icons.lock_rounded,
                 color: Colors.white,

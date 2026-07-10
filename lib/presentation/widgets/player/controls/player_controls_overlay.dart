@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +5,8 @@ import 'package:flutter_video_player/core/theme/app_theme.dart';
 import 'package:flutter_video_player/core/utils/duration_formatter.dart';
 import 'package:flutter_video_player/presentation/providers/player_controls_style_provider.dart';
 import 'package:flutter_video_player/presentation/providers/player_provider.dart';
+import 'package:flutter_video_player/presentation/widgets/common/glass_surface.dart'
+    as glass;
 
 part 'top_bar.dart';
 part 'center_controls.dart';
@@ -30,45 +30,9 @@ const _kWhite100 = Colors.white;
 const _kWhite90 = Color(0xE6FFFFFF);
 const _kWhite60 = Color(0x99FFFFFF);
 const _kWhite30 = Color(0x4DFFFFFF);
-const _kWhite20 = Color(0x33FFFFFF);
 const _kWhite12 = Color(0x1FFFFFFF);
 const _kBlack40 = Color(0x66000000);
 const _kOrange = Color(0xFFFF8C00);
-
-// Shared across every frosted surface (ImageFilter is immutable) so we don't
-// allocate a new blur handle per button on each rebuild.
-final ImageFilter _kFrostFilter =
-    ImageFilter.blur(sigmaX: 18.0, sigmaY: 18.0);
-
-// Glass surface fills. A light sheen at the top edge (simulating rim light on
-// glass) eases into a darker body that keeps white icons legible over bright
-// frames — the iOS control-centre recipe. Frosted variants sit over a live
-// blur so their bodies are lighter (more video colour shows through); tint
-// variants are darker since there's no blur to add depth.
-const _kFrostGradient = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [Color(0x40FFFFFF), Color(0x1F000000), Color(0x42000000)],
-  stops: [0.0, 0.45, 1.0],
-);
-const _kFrostGradientStrong = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [Color(0x4DFFFFFF), Color(0x3D000000), Color(0x5C000000)],
-  stops: [0.0, 0.45, 1.0],
-);
-const _kTintGradient = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [Color(0x24FFFFFF), Color(0x4D000000), Color(0x6B000000)],
-  stops: [0.0, 0.4, 1.0],
-);
-const _kTintGradientStrong = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [Color(0x2EFFFFFF), Color(0x8C000000), Color(0xB3000000)],
-  stops: [0.0, 0.4, 1.0],
-);
 
 /// Inherited style marker read by every [_GlassSurface] so the control
 /// material (black tint vs frosted blur) is switched from one place without
@@ -170,7 +134,7 @@ class PlayerControlsOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = Stack(
+    final content = Stack(
       children: [
         const Positioned(
           top: 0,
@@ -225,15 +189,17 @@ class PlayerControlsOverlay extends StatelessWidget {
       ],
     );
 
-    // In frosted mode, a single BackdropGroup lets every _GlassSurface share
-    // one backdrop blur pass instead of one per button.
-    if (controlsStyle == PlayerControlsStyle.frosted) {
-      content = BackdropGroup(child: content);
-    }
+    // Always wrapped (not just in frosted mode) so the tree shape here never
+    // changes with `controlsStyle` — every _GlassSurface always renders a
+    // BackdropFilter.grouped (a 0-sigma no-op blur in tint mode), and an
+    // ancestor BackdropGroup is required for those to share one blur pass.
+    // Keeping this unconditional avoids a widget-type swap at this slot if
+    // controlsStyle ever changes while the overlay is mounted.
+    final grouped = BackdropGroup(child: content);
 
     // _GlassStyleScope hands the chosen style down to every _GlassSurface
     // without threading it through each widget's constructor.
-    return _GlassStyleScope(style: controlsStyle, child: content);
+    return _GlassStyleScope(style: controlsStyle, child: grouped);
   }
 }
 

@@ -1,10 +1,10 @@
 part of 'player_controls_overlay.dart';
 
-/// The shared material for every player control surface. In [tint] mode it is
-/// a flat translucent-black container (the original look); in [frosted] mode it
-/// clips to its shape and applies a [BackdropFilter.grouped] blur so the live
-/// video melts through the glass. All frosted surfaces share one blur pass via
-/// the [BackdropGroup] the overlay installs, so N buttons cost one blur, not N.
+/// Thin adapter over the shared [glass.GlassSurface] widget: resolves
+/// [PlayerControlsStyle] (read from [_GlassStyleScope]) to a [glass.GlassStyle]
+/// so every player button, chip, and pill renders through the same primitive
+/// the mini-player and lock overlay use — one shared implementation instead
+/// of a second, diverging one.
 ///
 /// Pass [borderRadius] null for a circle (icon buttons, seek/track/play) or a
 /// radius for a pill/chip. [strong] uses a heavier fill for the play button so
@@ -36,38 +36,17 @@ class _GlassSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final frosted =
         _GlassStyleScope.of(context) == PlayerControlsStyle.frosted;
-    final isCircle = borderRadius == null;
-
-    final decoration = BoxDecoration(
-      gradient: frosted
-          ? (strong ? _kFrostGradientStrong : _kFrostGradient)
-          : (strong ? _kTintGradientStrong : _kTintGradient),
-      shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-      borderRadius: borderRadius,
-      // A brighter hairline on frosted surfaces reads as a lit glass edge.
-      border: Border.all(
-        color: borderColor ?? (frosted ? _kWhite30 : _kWhite20),
-      ),
-      // A drop shadow only makes sense in tint mode — inside the frosted clip
-      // it can't cast beyond the surface anyway.
-      boxShadow: frosted ? null : shadow,
-    );
-
-    final content = Container(
+    return glass.GlassSurface(
+      style: frosted ? glass.GlassStyle.frosted : glass.GlassStyle.tint,
       width: width,
       height: height,
       padding: padding,
       alignment: alignment,
-      decoration: decoration,
+      borderRadius: borderRadius,
+      borderColor: borderColor,
+      strong: strong,
+      shadow: shadow,
       child: child,
     );
-
-    if (!frosted) return content;
-
-    final blurred =
-        BackdropFilter.grouped(filter: _kFrostFilter, child: content);
-    return isCircle
-        ? ClipOval(child: blurred)
-        : ClipRRect(borderRadius: borderRadius!, child: blurred);
   }
 }

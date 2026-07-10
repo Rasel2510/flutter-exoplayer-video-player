@@ -60,7 +60,14 @@ class _MiniChip extends StatelessWidget {
       );
     }
 
-    return GestureDetector(onTap: onTap, child: surface);
+    // opaque: the bare branch's Container has no decoration (no color/border
+    // when `color` is null), so without this the tap area shrinks to just
+    // the Text's own glyph bounds instead of the full padded chip.
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: surface,
+    );
   }
 }
 

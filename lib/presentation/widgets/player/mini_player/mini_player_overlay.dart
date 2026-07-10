@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_video_player/presentation/providers/player_controls_style_provider.dart';
 import 'package:flutter_video_player/presentation/providers/player_provider.dart';
 import 'package:flutter_video_player/presentation/screens/player_screen.dart';
+import 'package:flutter_video_player/presentation/widgets/common/glass_surface.dart';
 import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 import 'package:flutter_video_player/app.dart';
 import 'mini_controls_row.dart';
@@ -191,6 +193,8 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
           folderVideos: s.folderVideos,
           currentIndex: s.currentIndex,
         )));
+    final frosted =
+        ref.watch(controlsStyleProvider) == PlayerControlsStyle.frosted;
 
     if (!isActive || video == null) {
       _hideTimer?.cancel();
@@ -372,16 +376,20 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
                     ),
 
                   // ── Controls overlay ──
+                  // Matches the main player's frosted/tint setting so the
+                  // mini-player's scrim doesn't look stuck in the old flat
+                  // look when the user turns Frosted controls on. Wrapped in
+                  // its own BackdropGroup — this is the only glass surface in
+                  // this small window, so there's nothing else to batch with.
                   AnimatedOpacity(
                     opacity: _controlsVisible ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 200),
                     child: IgnorePointer(
                       ignoring: !_controlsVisible,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      child: BackdropGroup(
+                        child: GlassSurface(
+                        style: frosted ? GlassStyle.frosted : GlassStyle.tint,
+                        borderRadius: BorderRadius.circular(12),
                         child: Stack(
                           children: [
                             // Close (×) — top left
@@ -431,6 +439,7 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
                         ),
                       ),
                     ),
+                  ),
                   ),
 
                   // ── Progress bar — isolated Consumer, rebuilds every second ──
