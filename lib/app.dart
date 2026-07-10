@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/widgets/common/subtitle_font_warmup.dart';
 import 'presentation/widgets/common/thumbnail_widget.dart';
 import 'presentation/widgets/player/mini_player/mini_player_overlay.dart';
 import 'presentation/screens/home_screen.dart';
@@ -23,7 +24,17 @@ class VideoPlayerApp extends ConsumerWidget {
       themeMode: themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      builder: (context, child) => MiniPlayerOverlay(child: child!),
+      builder: (context, child) => MiniPlayerOverlay(
+        child: Stack(
+          children: [
+            child!,
+            // Invisible — pays the one-time font-shaping cost for every
+            // subtitle font preset up front, instead of during the subtitle
+            // sheet's opening animation.
+            const SubtitleFontWarmup(),
+          ],
+        ),
+      ),
       // FIX #OPT-8: ShimmerScope provides a single shared AnimationController
       // to all VideoThumbnailWidget instances.  Without this wrapper every
       // loading thumbnail would spin up its own controller.

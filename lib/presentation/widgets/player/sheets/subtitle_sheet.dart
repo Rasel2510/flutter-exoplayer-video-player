@@ -7,6 +7,7 @@ import 'package:flutter_video_player/presentation/widgets/common/sheet_surface.d
 
 part 'delay_control.dart';
 part 'appearance_control.dart';
+part 'color_swatch_row.dart';
 part 'subtitle_step_button.dart';
 
 class SubtitleSheet extends StatelessWidget {

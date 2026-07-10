@@ -13,6 +13,15 @@ const subtitleColorPresets = <Color>[
   Color(0xFFFF4081), // Pink
   Color(0xFFFF9800), // Orange
   Color(0xFFE040FB), // Purple
+  // Appended later — a softer, more refined set alongside the original neon
+  // presets above (same jewel-tone family as libraryAccentPresets). Keep
+  // adding new presets to the end, never insert earlier in the list.
+  Color(0xFFFFD54F), // Gold
+  Color(0xFF64B5F6), // Sky blue
+  Color(0xFF69F0AE), // Mint
+  Color(0xFFFF8A65), // Coral
+  Color(0xFFB388FF), // Lavender
+  Color(0xFFF48FB1), // Blush
 ];
 
 const subtitleBgColorPresets = <Color>[
@@ -21,6 +30,11 @@ const subtitleBgColorPresets = <Color>[
   Color(0xAA4CAF50), // Green
   Color(0xAAF44336), // Red
   Color(0xAA9C27B0), // Purple
+  // Appended later — richer, more subdued tones than the bright primaries
+  // above. Keep adding new presets to the end, never insert earlier.
+  Color(0xAA37474F), // Slate
+  Color(0xAA1A237E), // Navy
+  Color(0xAA2E7D32), // Forest
 ];
 
 /// Preset subtitle fonts. These are Android's built-in generic font families,

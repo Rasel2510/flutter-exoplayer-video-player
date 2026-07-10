@@ -147,37 +147,12 @@ class _AppearanceControl extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.palette_outlined,
-                  color: context.colors.textMuted, size: 18),
-              const SizedBox(width: 14),
-              Text('Color',
-                  style:
-                      TextStyle(color: context.colors.textSecondary, fontSize: 13)),
-              const Spacer(),
-              for (var i = 0; i < subtitleColorPresets.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(left: 10),
-                  child: GestureDetector(
-                    onTap: () => notifier.setColorIndex(i),
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: subtitleColorPresets[i],
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: style.colorIndex == i
-                              ? context.colors.accent
-                              : context.colors.border,
-                          width: style.colorIndex == i ? 2 : 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          _ColorSwatchRow(
+            icon: Icons.palette_outlined,
+            label: 'Color',
+            colors: subtitleColorPresets,
+            selectedIndex: style.colorIndex,
+            onSelect: notifier.setColorIndex,
           ),
           const SizedBox(height: 12),
           Row(
@@ -198,36 +173,15 @@ class _AppearanceControl extends ConsumerWidget {
           ),
           if (style.background) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                const SizedBox(width: 32), // Align with text
-                Text('Background color',
-                    style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
-                const Spacer(),
-                for (var i = 0; i < subtitleBgColorPresets.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: GestureDetector(
-                      onTap: () => notifier.setBackgroundColorIndex(i),
-                      child: Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          // the preset colors have alpha, so we render them on white or just use the raw color
-                          // Since panel is dark, the alpha color will blend and show correctly.
-                          color: subtitleBgColorPresets[i].withValues(alpha: 1.0), // Show solid color in picker
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: style.backgroundColorIndex == i
-                                ? context.colors.accent
-                                : context.colors.border,
-                            width: style.backgroundColorIndex == i ? 2 : 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+            _ColorSwatchRow(
+              label: 'Background color',
+              // The preset colors carry alpha for how they render over the
+              // video; shown solid here so the picker swatches read clearly.
+              colors: [
+                for (final c in subtitleBgColorPresets) c.withValues(alpha: 1.0)
               ],
+              selectedIndex: style.backgroundColorIndex,
+              onSelect: notifier.setBackgroundColorIndex,
             ),
           ],
         ],
