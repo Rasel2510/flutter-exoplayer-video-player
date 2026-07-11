@@ -97,18 +97,25 @@ class DurationCacheService {
   Future<Map<String, Duration>> loadCachedDurations(List<String> paths) async {
     final prefs = await _p;
     final result = <String, Duration>{};
-    for (final path in paths) {
+    for (var i = 0; i < paths.length; i++) {
+      final path = paths[i];
       if (_memCache.containsKey(path)) {
         final d = _memCache[path];
         if (d != null) result[path] = d;
-        continue;
+      } else {
+        final ms = prefs.getInt(_key(path));
+        if (ms != null && ms > 0) {
+          final d = Duration(milliseconds: ms);
+          _memCache[path] = d;
+          result[path] = d;
+        }
       }
-      final ms = prefs.getInt(_key(path));
-      if (ms != null && ms > 0) {
-        final d = Duration(milliseconds: ms);
-        _memCache[path] = d;
-        result[path] = d;
-      }
+      // A folder with thousands of videos would otherwise run this entire
+      // loop as one uninterrupted synchronous burst — right on the same
+      // frame as the folder screen's push transition. Yielding periodically
+      // caps the max burst size so it can't out-scale the frame budget no
+      // matter how large the folder is.
+      if (i % 200 == 199) await Future<void>.delayed(Duration.zero);
     }
     return result;
   }

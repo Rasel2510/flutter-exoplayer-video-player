@@ -252,27 +252,40 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     final paths = widget.folder.videos.map((v) => v.path).toList();
 
     // ── Phase 1: instant cache read ───────────────────────────────────────
-    // loadCachedDurations does a single SharedPreferences.getInstance() then
-    // reads all keys synchronously — typically completes in < 5 ms.
-    // Positions are also pure prefs reads so we run both in parallel.
-    final results = await Future.wait([
-      DurationCacheService.instance.loadCachedDurations(paths),
-      Future.wait(paths.map((path) async {
+    // loadCachedDurations reads all keys from an already-loaded
+    // SharedPreferences, yielding periodically internally so it can't block
+    // the UI thread for one long burst on a huge folder.
+    final cachedDurs =
+        await DurationCacheService.instance.loadCachedDurations(paths);
+    if (!mounted) return;
+    setState(() => _durations.addAll(cachedDurs));
+
+    // ── Phase 1b: saved positions, in yielding batches ─────────────────────
+    // Reading every position concurrently via one big Future.wait resumes
+    // all of them back-to-back in the same microtask drain — effectively a
+    // synchronous burst that scales with folder size and, on a low-end
+    // device, was landing right on the folder screen's push-transition
+    // frame. Batching with a yield between batches caps the burst regardless
+    // of how many videos the folder has.
+    const batchSize = 150;
+    for (var start = 0; start < paths.length; start += batchSize) {
+      final batch = paths.skip(start).take(batchSize);
+      final posList = await Future.wait(batch.map((path) async {
         final pos = await PositionService.instance.load(path);
         return (path, pos ?? Duration.zero);
-      })),
-    ]);
-
-    if (!mounted) return;
-    setState(() {
-      final cachedDurs = results[0] as Map<String, Duration>;
-      final posList = results[1] as List<(String, Duration)>;
-      _durations.addAll(cachedDurs);
-      for (final (path, pos) in posList) {
-        _positions[path] = pos;
+      }));
+      if (!mounted) return;
+      setState(() {
+        for (final (path, pos) in posList) {
+          _positions[path] = pos;
+        }
+      });
+      if (start + batchSize < paths.length) {
+        await Future<void>.delayed(Duration.zero);
       }
-      _positionsLoaded = true;
-    });
+    }
+    if (!mounted) return;
+    setState(() => _positionsLoaded = true);
 
     // ── Phase 2: background probe for uncached durations ──────────────────
     // Only runs for videos whose duration wasn't in the cache above.
@@ -320,26 +333,40 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
         _sortedDeletedCount == _deletedPaths.length) {
       return _sortedCache!;
     }
-    final list = base
-        .where((v) => !_deletedPaths.contains(v.path))
-        .map((v) => _renamedOverrides[v.path] ?? v)
-        .toList();
-    switch (_sortBy) {
-      case SortOption.name:
-        // Precompute keys — toLowerCase() in a comparator runs O(n log n) times.
-        final nameKeys = {for (final v in list) v: v.name.toLowerCase()};
-        list.sort((a, b) => nameKeys[a]!.compareTo(nameKeys[b]!));
-      case SortOption.dateModified:
-        list.sort((a, b) => b.modified.compareTo(a.modified));
-      case SortOption.size:
-        list.sort((a, b) => b.size.compareTo(a.size));
-      case SortOption.duration:
-        list.sort((a, b) {
-          final da = _durations[a.path] ?? Duration.zero;
-          final db = _durations[b.path] ?? Duration.zero;
-          return db.compareTo(da);
-        });
+
+    List<VideoFile> list;
+    // The folder scanner already returns videos sorted by name, so on first
+    // open — before anything's been deleted or renamed — redoing that same
+    // O(n log n) sort (plus a toLowerCase() per video) is wasted work that
+    // scales with folder size and lands squarely on the push-transition
+    // frame. Trust the scanner's order instead of recomputing it.
+    if (_sortBy == SortOption.name &&
+        _deletedPaths.isEmpty &&
+        _renamedOverrides.isEmpty) {
+      list = base;
+    } else {
+      list = base
+          .where((v) => !_deletedPaths.contains(v.path))
+          .map((v) => _renamedOverrides[v.path] ?? v)
+          .toList();
+      switch (_sortBy) {
+        case SortOption.name:
+          // Precompute keys — toLowerCase() in a comparator runs O(n log n) times.
+          final nameKeys = {for (final v in list) v: v.name.toLowerCase()};
+          list.sort((a, b) => nameKeys[a]!.compareTo(nameKeys[b]!));
+        case SortOption.dateModified:
+          list.sort((a, b) => b.modified.compareTo(a.modified));
+        case SortOption.size:
+          list.sort((a, b) => b.size.compareTo(a.size));
+        case SortOption.duration:
+          list.sort((a, b) {
+            final da = _durations[a.path] ?? Duration.zero;
+            final db = _durations[b.path] ?? Duration.zero;
+            return db.compareTo(da);
+          });
+      }
     }
+
     _sortedCache = list;
     _sortedForOption = _sortBy;
     _sortedDeletedCount = _deletedPaths.length;
