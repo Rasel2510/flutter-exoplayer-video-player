@@ -17,16 +17,16 @@ import 'package:flutter_video_player/data/services/position_service.dart';
 import 'package:flutter_video_player/data/services/recent_files_service.dart';
 import 'package:flutter_video_player/data/services/thumbnail_service.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/folder_videos_app_bar.dart';
-import 'package:flutter_video_player/presentation/widgets/folder_videos/no_results.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/selection_delete_bar.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/sort_option.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/sort_sheet.dart';
-import 'package:flutter_video_player/presentation/widgets/folder_videos/video_card.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/video_options_sheet.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/video_details_sheet.dart';
-import 'package:flutter_video_player/presentation/widgets/folder_videos/folder_search_bar.dart';
+import 'package:flutter_video_player/presentation/widgets/folder_videos/folder_videos_content.dart';
 import 'package:flutter_video_player/presentation/widgets/folder_videos/resume_fab.dart';
+import 'package:flutter_video_player/presentation/widgets/folder_videos/selection_options_sheet.dart';
 import 'player_screen.dart';
+import 'folder_picker_screen.dart';
 import 'package:flutter_video_player/presentation/widgets/common/smooth_page_route.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     if (confirmed != true || !mounted) return;
 
     final pathsToDelete = _selectedPaths.toList();
-    
+
     // Perform deletions in parallel
     await Future.wait(pathsToDelete.map((path) async {
       try {
@@ -202,6 +202,175 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
         .length;
     if (remaining == 0 && mounted) {
       Navigator.pop(context);
+    }
+  }
+
+  /// Shares every selected video as one share-sheet call. Called from the app
+  /// bar's share icon (multi-select mode) — only enabled when there's a
+  /// selection, so [_selectedPaths] is never empty here.
+  void _shareSelected(List<VideoFile> sorted) {
+    final selectedVfs =
+        sorted.where((v) => _selectedPaths.contains(v.path)).toList();
+    Share.shareXFiles(selectedVfs.map((v) => XFile(v.path)).toList());
+  }
+
+  /// Overflow sheet for less-common bulk actions — reached via the app bar's
+  /// ⋮ icon (multi-select mode) so the bar itself doesn't grow an icon for
+  /// every action added later.
+  void _showSelectionOptions(List<VideoFile> sorted) {
+    final canClearResume = sorted
+        .where((v) => _selectedPaths.contains(v.path))
+        .any((v) => (_positions[v.path] ?? Duration.zero) > Duration.zero);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (_) => SelectionOptionsSheet(
+        selectedCount: _selectedPaths.length,
+        canClearResume: canClearResume,
+        onClearResume: () {
+          Navigator.pop(context);
+          _clearSelectedResume();
+        },
+        onMoveToAlbum: () {
+          Navigator.pop(context);
+          _pickAlbumAndMove(sorted, move: true);
+        },
+        onCopyToAlbum: () {
+          Navigator.pop(context);
+          _pickAlbumAndMove(sorted, move: false);
+        },
+      ),
+    );
+  }
+
+  Future<void> _clearSelectedResume() async {
+    final paths = _selectedPaths.toList();
+    final hasAnyResume = paths.any(
+      (path) => (_positions[path] ?? Duration.zero) > Duration.zero,
+    );
+
+    if (!hasAnyResume) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No resume positions to clear')),
+        );
+      }
+      return;
+    }
+
+    await Future.wait(
+        paths.map((path) => PositionService.instance.clear(path)));
+    if (!mounted) return;
+    setState(() {
+      for (final path in paths) {
+        _positions[path] = Duration.zero;
+      }
+    });
+  }
+
+  Future<void> _pickAlbumAndMove(List<VideoFile> sorted,
+      {required bool move}) async {
+    final destination = await Navigator.push<VideoFolder>(
+      context,
+      SmoothPageRoute(
+        child: FolderPickerScreen(
+          excludePath: widget.folder.path,
+          title: move ? 'Move to folder' : 'Copy to folder',
+          confirmLabel: move ? 'Move here' : 'Copy here',
+        ),
+      ),
+    );
+    if (destination == null || !mounted) return;
+    await _moveOrCopySelected(sorted, destination, move: move);
+  }
+
+  /// Moves or copies every selected video into [destination]. Per-video
+  /// failures (a same-named file already there, a permission error) are
+  /// skipped rather than aborting the whole batch — the summary snackbar
+  /// reports how many were skipped.
+  Future<void> _moveOrCopySelected(
+    List<VideoFile> sorted,
+    VideoFolder destination, {
+    required bool move,
+  }) async {
+    final selectedVfs =
+        sorted.where((v) => _selectedPaths.contains(v.path)).toList();
+    var succeeded = 0;
+    var skipped = 0;
+    final movedPaths = <String>[];
+
+    for (final vf in selectedVfs) {
+      final newPath = p.join(destination.path, vf.name);
+      if (newPath == vf.path || await File(newPath).exists()) {
+        skipped++;
+        continue;
+      }
+      try {
+        if (move) {
+          try {
+            await File(vf.path).rename(newPath);
+          } on FileSystemException {
+            // rename() can't cross a filesystem/volume boundary (e.g.
+            // internal storage <-> SD card) — fall back to copy then delete.
+            await File(vf.path).copy(newPath);
+            await File(vf.path).delete();
+          }
+          await Future.wait([
+            PositionService.instance.rename(vf.path, newPath),
+            DurationCacheService.instance.rename(vf.path, newPath),
+            ThumbnailService.instance.rename(vf.path, newPath),
+          ]);
+          movedPaths.add(vf.path);
+        } else {
+          await File(vf.path).copy(newPath);
+        }
+        succeeded++;
+      } catch (_) {
+        skipped++;
+      }
+    }
+
+    if (!mounted) return;
+
+    if (move && movedPaths.isNotEmpty) {
+      setState(() {
+        _deletedPaths.addAll(movedPaths);
+        for (final path in movedPaths) {
+          _positions.remove(path);
+          _durations.remove(path);
+        }
+        _sortedCache = null;
+      });
+      ref.read(foldersProvider.notifier).removeVideos(movedPaths);
+    }
+
+    // No surgical "insert into folder" op exists (same tradeoff the vault
+    // restore flow makes) — a rescan is what picks up the new arrivals in
+    // the destination folder. This is a deliberate, infrequent action, so
+    // the rescan cost is acceptable.
+    ref.read(foldersProvider.notifier).load(forceScan: true);
+
+    _exitSelectionMode();
+    final verb = move ? 'Moved' : 'Copied';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(skipped == 0
+            ? '$verb $succeeded video${succeeded == 1 ? '' : 's'} to ${destination.name}'
+            : '$verb $succeeded, skipped $skipped (already in ${destination.name})'),
+      ),
+    );
+
+    if (move) {
+      final remaining = widget.folder.videos
+          .where((v) => !_deletedPaths.contains(v.path))
+          .length;
+      if (remaining == 0 && mounted) {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -291,7 +460,8 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     // Only runs for videos whose duration wasn't in the cache above.
     // Does not block the UI — results trickle in, batched into one setState
     // per flush window instead of one full-list rebuild per video.
-    final uncached = paths.where((path) => !_durations.containsKey(path)).toList();
+    final uncached =
+        paths.where((path) => !_durations.containsKey(path)).toList();
     if (uncached.isEmpty) return;
 
     for (final path in uncached) {
@@ -508,7 +678,7 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
         onMoveToVault: () async {
           Navigator.pop(context);
           await ref.read(vaultProvider.notifier).addVideo(vf);
-          
+
           setState(() {
             _deletedPaths.add(vf.path);
             _positions.remove(vf.path);
@@ -521,7 +691,7 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Video moved to Vault')),
             );
-            
+
             final remaining = widget.folder.videos
                 .where((v) => !_deletedPaths.contains(v.path))
                 .length;
@@ -611,8 +781,9 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     // Extension is kept fixed — only the base name is editable, so a rename
     // can't accidentally produce a file the player no longer recognises.
     final ext = p.extension(vf.name);
-    final baseName =
-        ext.isNotEmpty ? vf.name.substring(0, vf.name.length - ext.length) : vf.name;
+    final baseName = ext.isNotEmpty
+        ? vf.name.substring(0, vf.name.length - ext.length)
+        : vf.name;
     final ctrl = TextEditingController(text: baseName);
 
     final newBaseName = await showDialog<String>(
@@ -652,12 +823,32 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
   // Windows reserved device names — illegal as a base file name on FAT/exFAT
   // SD cards even though Android's own storage tolerates them.
   static const _reservedNames = {
-    'CON', 'PRN', 'AUX', 'NUL',
-    'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-    'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
   };
 
-  Future<void> _renameVideo(VideoFile vf, String newBaseName, String ext) async {
+  Future<void> _renameVideo(
+      VideoFile vf, String newBaseName, String ext) async {
     // Strip illegal characters, then trailing dots/spaces (which produce
     // hidden or invalid files on some filesystems).
     var sanitized = newBaseName
@@ -667,7 +858,8 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
     if (sanitized.isEmpty) return;
     // A leading dot makes a hidden file; a reserved device name is rejected on
     // FAT/exFAT SD cards. Prefix with '_' to keep the user's intent readable.
-    if (sanitized.startsWith('.') || _reservedNames.contains(sanitized.toUpperCase())) {
+    if (sanitized.startsWith('.') ||
+        _reservedNames.contains(sanitized.toUpperCase())) {
       sanitized = '_$sanitized';
     }
 
@@ -796,8 +988,11 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
         onToggleSearch: _toggleSearch,
         onShowSort: _showSortSheet,
         onEnterSelection: () => _enterSelectionMode(null),
+        onShare: _selectedPaths.isEmpty ? null : () => _shareSelected(sorted),
         onMoveToVault:
             _selectedPaths.isEmpty ? null : () => _moveSelectedToVault(sorted),
+        onMoreOptions:
+            _selectedPaths.isEmpty ? null : () => _showSelectionOptions(sorted),
       ),
       floatingActionButton: (_selectionMode || last == null)
           ? null
@@ -817,49 +1012,21 @@ class _FolderVideosScreenState extends ConsumerState<FolderVideosScreen> {
               )
             : const SizedBox.shrink(),
       ),
-      body: Column(
-        children: [
-          FolderSearchBar(open: _searchOpen, controller: _searchCtrl),
-
-          // Video list
-          Expanded(
-            child: display.isEmpty
-                ? _searchQuery.isNotEmpty
-                    ? NoResults(query: _searchQuery)
-                    : const SizedBox()
-                : ListView.builder(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      8,
-                      16,
-                      (_selectionMode ? 88 : (last != null ? 96 : 16)) + MediaQuery.of(context).padding.bottom,
-                    ),
-                    itemCount: display.length,
-                    itemBuilder: (_, i) {
-                      final vf = display[i];
-                      final savedPos = _positions[vf.path];
-                      final hasResume =
-                          savedPos != null && savedPos > Duration.zero;
-                      final isNew = newPaths.contains(vf.path);
-                      return RepaintBoundary(
-                        key: ValueKey(vf.path),
-                        child: VideoCard(
-                          vf: vf,
-                          savedPos: hasResume ? savedPos : null,
-                          totalDur: _durations[vf.path],
-                          isNew: isNew,
-                          sortBy: _sortBy,
-                          selectionMode: _selectionMode,
-                          isSelected: _selectedPaths.contains(vf.path),
-                          onSelectToggle: () => _toggleSelection(vf.path),
-                          onTap: () => _openVideo(vf, sorted),
-                          onLongPress: () => _showVideoOptions(vf, sorted),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+      body: FolderVideosContent(
+        newPaths: newPaths,
+        sorted: sorted,
+        display: display,
+        last: last,
+        selectionMode: _selectionMode,
+        searchOpen: _searchOpen,
+        searchCtrl: _searchCtrl,
+        sortBy: _sortBy,
+        positions: _positions,
+        durations: _durations,
+        selectedPaths: _selectedPaths,
+        onOpenVideo: _openVideo,
+        onLongPress: _showVideoOptions,
+        onSelectToggle: (vf) => _toggleSelection(vf.path),
       ),
     );
   }

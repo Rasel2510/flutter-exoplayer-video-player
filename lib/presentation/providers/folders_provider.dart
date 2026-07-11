@@ -203,6 +203,24 @@ void _quickScanSync(
 Set<String> _pruneSeenPaths(Set<String> seen, Set<String> allCurrentPaths) =>
     seen.intersection(allCurrentPaths);
 
+Set<String> pruneNewPathsForRemovedVideos({
+  required Set<String> currentNewPaths,
+  required List<VideoFolder> folders,
+  required List<String> removedPaths,
+}) {
+  final updated = Set<String>.from(currentNewPaths)
+    ..removeAll(removedPaths.toSet());
+
+  for (final folder in folders) {
+    final folderStillNew = folder.videos.any((v) => updated.contains(v.path));
+    if (!folderStillNew) {
+      updated.remove(folder.path);
+    }
+  }
+
+  return updated;
+}
+
 Map<String, dynamic> _folderToMap(VideoFolder f) => {
       'path': f.path,
       'videos': f.videos
@@ -273,8 +291,8 @@ class FoldersNotifier extends Notifier<FoldersState> {
   LibraryScanMode _resolveScanMode() {
     if (!Platform.isAndroid) return LibraryScanMode.fileScanner;
     final idx = PlayerPreferencesService.instance.scanModeIndexCached;
-    return LibraryScanMode.values[
-        idx.clamp(0, LibraryScanMode.values.length - 1)];
+    return LibraryScanMode
+        .values[idx.clamp(0, LibraryScanMode.values.length - 1)];
   }
 
   @override
@@ -386,7 +404,9 @@ class FoldersNotifier extends Notifier<FoldersState> {
       // MediaStore already knows each indexed video's duration — seed the cache
       // so the folder screen never spins up a Player just to read it.
       DurationCacheService.instance.seedDurations(videos);
-      final mediaByPath = <String, VideoFile>{for (final v in videos) v.path: v};
+      final mediaByPath = <String, VideoFile>{
+        for (final v in videos) v.path: v
+      };
 
       // In hybrid mode, keep the filesystem-only videos already on screen (from
       // cache or a prior walk) — WhatsApp/Telegram, etc. — so a MediaStore-only
@@ -522,19 +542,22 @@ class FoldersNotifier extends Notifier<FoldersState> {
 
   Future<void> _showCache(List<VideoFolder> cached, List<String> roots) async {
     // FIX #SDCARD: Filter out folders whose storage root no longer exists.
-    final validFolders =
-        cached.where((f) => roots.any((root) => f.path.startsWith(root))).toList();
+    final validFolders = cached
+        .where((f) => roots.any((root) => f.path.startsWith(root)))
+        .toList();
 
     final seenPaths = await _loadSeenPaths();
     final initialised = seenPaths != null && seenPaths.isNotEmpty;
     final newPaths = <String>{};
     if (initialised) {
       for (final f in validFolders) {
-        if (!seenPaths.contains(f.path) && !_sessionSeenPaths.contains(f.path)) {
+        if (!seenPaths.contains(f.path) &&
+            !_sessionSeenPaths.contains(f.path)) {
           newPaths.add(f.path);
         }
         for (final v in f.videos) {
-          if (!seenPaths.contains(v.path) && !_sessionSeenPaths.contains(v.path)) {
+          if (!seenPaths.contains(v.path) &&
+              !_sessionSeenPaths.contains(v.path)) {
             newPaths.add(v.path);
             newPaths.add(f.path);
           }
@@ -734,8 +757,11 @@ class FoldersNotifier extends Notifier<FoldersState> {
         .where((f) => f.videos.isNotEmpty)
         .toList();
 
-    final updatedNewPaths = Set<String>.from(state.newPaths)
-      ..remove(videoPath);
+    final updatedNewPaths = pruneNewPathsForRemovedVideos(
+      currentNewPaths: state.newPaths,
+      folders: updatedFolders,
+      removedPaths: [videoPath],
+    );
 
     state = state.copyWith(folders: updatedFolders, newPaths: updatedNewPaths);
 
@@ -774,8 +800,11 @@ class FoldersNotifier extends Notifier<FoldersState> {
         .where((f) => f.videos.isNotEmpty)
         .toList();
 
-    final updatedNewPaths = Set<String>.from(state.newPaths)
-      ..removeAll(pathSet);
+    final updatedNewPaths = pruneNewPathsForRemovedVideos(
+      currentNewPaths: state.newPaths,
+      folders: updatedFolders,
+      removedPaths: pathSet.toList(),
+    );
 
     state = state.copyWith(folders: updatedFolders, newPaths: updatedNewPaths);
     _saveCache(updatedFolders);

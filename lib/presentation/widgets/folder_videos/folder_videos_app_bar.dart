@@ -3,7 +3,8 @@ import 'package:flutter_video_player/core/theme/app_theme.dart';
 
 /// The folder screen's app bar. Swaps between the normal title + actions
 /// (search / sort / multi-select) and the selection-mode title + select-all.
-class FolderVideosAppBar extends StatelessWidget implements PreferredSizeWidget {
+class FolderVideosAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   final String folderName;
   final int displayCount;
   final int totalCount;
@@ -21,7 +22,9 @@ class FolderVideosAppBar extends StatelessWidget implements PreferredSizeWidget 
   final VoidCallback onShowSort;
   final VoidCallback onEnterSelection;
   // Null when nothing is selected, which disables the button.
+  final VoidCallback? onShare;
   final VoidCallback? onMoveToVault;
+  final VoidCallback? onMoreOptions;
 
   const FolderVideosAppBar({
     super.key,
@@ -39,7 +42,9 @@ class FolderVideosAppBar extends StatelessWidget implements PreferredSizeWidget 
     required this.onToggleSearch,
     required this.onShowSort,
     required this.onEnterSelection,
+    this.onShare,
     this.onMoveToVault,
+    this.onMoreOptions,
   });
 
   @override
@@ -109,15 +114,27 @@ class FolderVideosAppBar extends StatelessWidget implements PreferredSizeWidget 
                       onPressed: onSelectAll,
                     ),
                     IconButton(
+                      icon: const Icon(Icons.share_outlined),
+                      tooltip: 'Share',
+                      onPressed: onShare,
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.lock_rounded),
                       tooltip: 'Move to Vault',
                       onPressed: onMoveToVault,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert_rounded),
+                      tooltip: 'More options',
+                      onPressed: onMoreOptions,
                     ),
                   ]
                 : [
                     IconButton(
                       icon: Icon(
-                        searchOpen ? Icons.search_off_rounded : Icons.search_rounded,
+                        searchOpen
+                            ? Icons.search_off_rounded
+                            : Icons.search_rounded,
                         size: 20,
                         color: searchOpen
                             ? context.colors.accent
@@ -131,10 +148,19 @@ class FolderVideosAppBar extends StatelessWidget implements PreferredSizeWidget 
                       tooltip: 'Sort',
                       onPressed: onShowSort,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.checklist_rounded),
-                      tooltip: 'Select multiple',
-                      onPressed: onEnterSelection,
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 180),
+                      scale: 1.0,
+                      curve: Curves.easeOutCubic,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 180),
+                        opacity: 1.0,
+                        child: IconButton(
+                          icon: const Icon(Icons.checklist_rounded),
+                          tooltip: 'Select multiple',
+                          onPressed: onEnterSelection,
+                        ),
+                      ),
                     ),
                   ],
           ),

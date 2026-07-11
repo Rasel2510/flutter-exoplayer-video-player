@@ -4,7 +4,7 @@ import 'package:flutter_video_player/core/theme/app_theme.dart';
 class OptionRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color? color;
 
   const OptionRow({
