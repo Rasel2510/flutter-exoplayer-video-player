@@ -25,6 +25,8 @@ class PlayerPreferencesService {
   static const _subBackgroundKey = 'subtitle_background_v1';
   static const _subBgColorIndexKey = 'subtitle_bg_color_index_v1';
   static const _subFontIndexKey  = 'subtitle_font_index_v1';
+  static const _subtitlePositionXKey = 'subtitle_position_x_v1';
+  static const _subtitlePositionYKey = 'subtitle_position_y_v1';
   static const _seekIntervalKey  = 'player_seek_interval_v1';
   static const _folderIconColorIndexKey = 'folder_icon_color_index_v1';
   static const _newBadgeColorIndexKey   = 'new_badge_color_index_v1';
@@ -103,6 +105,8 @@ class PlayerPreferencesService {
       _subtitleBackgroundCache = p.getBool(_subBackgroundKey) ?? true;
       _subtitleBgColorIndexCache = p.getInt(_subBgColorIndexKey) ?? 0;
       _subtitleFontIndexCache = p.getInt(_subFontIndexKey) ?? 0;
+      _subtitlePositionXCache = p.getDouble(_subtitlePositionXKey);
+      _subtitlePositionYCache = p.getDouble(_subtitlePositionYKey);
       _seekIntervalCache = p.getInt(_seekIntervalKey) ?? 10;
       _folderIconColorIndexCache = p.getInt(_folderIconColorIndexKey) ?? 0;
       _newBadgeColorIndexCache = p.getInt(_newBadgeColorIndexKey) ?? 0;
@@ -136,12 +140,16 @@ class PlayerPreferencesService {
   bool _subtitleBackgroundCache = true;
   int _subtitleBgColorIndexCache = 0;
   int _subtitleFontIndexCache = 0;
+  double? _subtitlePositionXCache;
+  double? _subtitlePositionYCache;
 
   double get subtitleFontSizeCached => _subtitleFontSizeCache;
   int get subtitleColorIndexCached => _subtitleColorIndexCache;
   bool get subtitleBackgroundCached => _subtitleBackgroundCache;
   int get subtitleBgColorIndexCached => _subtitleBgColorIndexCache;
   int get subtitleFontIndexCached => _subtitleFontIndexCache;
+  double? get subtitlePositionXCached => _subtitlePositionXCache;
+  double? get subtitlePositionYCached => _subtitlePositionYCache;
 
   Future<void> saveSubtitleFontSize(double size) async {
     _subtitleFontSizeCache = size;
@@ -166,6 +174,21 @@ class PlayerPreferencesService {
   Future<void> saveSubtitleFontIndex(int index) async {
     _subtitleFontIndexCache = index;
     try { await (await _p).setInt(_subFontIndexKey, index); } catch (_) {}
+  }
+
+  Future<void> saveSubtitlePosition(double? x, double? y) async {
+    _subtitlePositionXCache = x;
+    _subtitlePositionYCache = y;
+    try {
+      final p = await _p;
+      if (x == null || y == null) {
+        await p.remove(_subtitlePositionXKey);
+        await p.remove(_subtitlePositionYKey);
+      } else {
+        await p.setDouble(_subtitlePositionXKey, x);
+        await p.setDouble(_subtitlePositionYKey, y);
+      }
+    } catch (_) {}
   }
 
   // ── Seek interval ─────────────────────────────────────────────────────────

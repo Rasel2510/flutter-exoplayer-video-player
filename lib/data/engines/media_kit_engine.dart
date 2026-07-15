@@ -58,8 +58,22 @@ class MediaKitEngine implements PlayerEngine {
   // app-facing id back to a media_kit track object.
   List<AudioTrack> _mkAudio = const [];
   List<SubtitleTrack> _mkSubtitle = const [];
+  static bool _initialized = false;
+
+  /// Can be called after app launch to silently warm up the native libraries
+  /// so they are ready instantly if a fallback occurs.
+  static void ensureInitializedInBackground() {
+    if (!_initialized) {
+      MediaKit.ensureInitialized();
+      _initialized = true;
+    }
+  }
 
   MediaKitEngine() {
+    if (!_initialized) {
+      MediaKit.ensureInitialized();
+      _initialized = true;
+    }
     _wire();
   }
 

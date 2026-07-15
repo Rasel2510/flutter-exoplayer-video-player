@@ -24,6 +24,10 @@ device's hardware can't handle (e.g. some 10-bit HEVC files).
   synced art.
 - **Picture-in-picture**, resume-from-last-position, and a locked-controls
   overlay for accidental-touch protection.
+- **Secure Vault**: Hide and protect private videos behind a PIN or biometric
+  authentication, keeping them out of the main library.
+- **Persistent Player Volume**: Automatically remembers and restores the
+  video player's volume level across sessions.
 
 ## Tech stack
 
@@ -33,6 +37,7 @@ device's hardware can't handle (e.g. some 10-bit HEVC files).
 - [`media_kit`](https://pub.dev/packages/media_kit) (libmpv/FFmpeg) as the
   software-decoding fallback engine
 - `video_thumbnail` / native `MediaStore` bridge for thumbnail generation
+- `local_auth` and `crypto` for Secure Vault authentication and PIN hashing
 
 ## Building
 

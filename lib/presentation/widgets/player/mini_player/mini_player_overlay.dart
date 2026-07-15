@@ -245,13 +245,22 @@ class _MiniPlayerOverlayState extends ConsumerState<MiniPlayerOverlay>
         ? Icons.replay_5_rounded
         : seekInterval <= 10
             ? Icons.replay_10_rounded
-            : Icons.replay_30_rounded;
+            : seekInterval == 15
+                // MiniControlsRow renders a custom Column for 15 s (since
+                // Icons.replay_15_rounded doesn't exist), but it still uses
+                // fast_rewind_rounded as the icon inside that Column — so we
+                // pass the same icon here to stay consistent.
+                ? Icons.fast_rewind_rounded
+                : Icons.replay_30_rounded;
 
     final IconData forwardIcon = seekInterval <= 5
         ? Icons.forward_5_rounded
         : seekInterval <= 10
             ? Icons.forward_10_rounded
-            : Icons.forward_30_rounded;
+            : seekInterval == 15
+                // Same reasoning as replayIcon above.
+                ? Icons.fast_forward_rounded
+                : Icons.forward_30_rounded;
 
     return Stack(
       children: [

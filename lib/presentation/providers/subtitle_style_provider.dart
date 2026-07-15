@@ -57,6 +57,7 @@ class SubtitleStyle {
   final bool background;
   final int backgroundColorIndex;
   final int fontIndex;
+  final Offset? position;
 
   const SubtitleStyle({
     this.fontSize = 32.0,
@@ -64,6 +65,7 @@ class SubtitleStyle {
     this.background = true,
     this.backgroundColorIndex = 0,
     this.fontIndex = 0,
+    this.position,
   });
 
   Color get color =>
@@ -83,6 +85,7 @@ class SubtitleStyle {
     bool? background,
     int? backgroundColorIndex,
     int? fontIndex,
+    Offset? position,
   }) =>
       SubtitleStyle(
         fontSize: fontSize ?? this.fontSize,
@@ -90,6 +93,7 @@ class SubtitleStyle {
         background: background ?? this.background,
         backgroundColorIndex: backgroundColorIndex ?? this.backgroundColorIndex,
         fontIndex: fontIndex ?? this.fontIndex,
+        position: position ?? this.position,
       );
 }
 
@@ -105,12 +109,16 @@ class SubtitleStyleNotifier extends StateNotifier<SubtitleStyle> {
 
   static SubtitleStyle _initial() {
     final prefs = PlayerPreferencesService.instance;
+    final x = prefs.subtitlePositionXCached;
+    final y = prefs.subtitlePositionYCached;
+    final position = (x != null && y != null) ? Offset(x, y) : null;
     return SubtitleStyle(
       fontSize: prefs.subtitleFontSizeCached,
       colorIndex: prefs.subtitleColorIndexCached,
       background: prefs.subtitleBackgroundCached,
       backgroundColorIndex: prefs.subtitleBgColorIndexCached,
       fontIndex: prefs.subtitleFontIndexCached,
+      position: position,
     );
   }
 
@@ -141,5 +149,22 @@ class SubtitleStyleNotifier extends StateNotifier<SubtitleStyle> {
   void setFontIndex(int index) {
     state = state.copyWith(fontIndex: index);
     PlayerPreferencesService.instance.saveSubtitleFontIndex(index);
+  }
+
+  void setPosition(Offset position) {
+    state = state.copyWith(position: position);
+    PlayerPreferencesService.instance.saveSubtitlePosition(position.dx, position.dy);
+  }
+
+  void resetPosition() {
+    state = SubtitleStyle(
+      fontSize: state.fontSize,
+      colorIndex: state.colorIndex,
+      background: state.background,
+      backgroundColorIndex: state.backgroundColorIndex,
+      fontIndex: state.fontIndex,
+      position: null,
+    );
+    PlayerPreferencesService.instance.saveSubtitlePosition(null, null);
   }
 }

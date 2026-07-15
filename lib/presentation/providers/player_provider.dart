@@ -790,9 +790,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _engine?.selectSubtitleTrack(target.id);
         state = state.copyWith(
             selectedSubtitleTrack: target, subtitlesEnabled: true);
-      } else {
-        state = state.copyWith(subtitlesEnabled: true);
       }
+      // If no subtitle track exists yet, don't flip subtitlesEnabled to true —
+      // the UI would show "ON" while the engine has no track selected, which is
+      // misleading. The toggle becomes a no-op: the user must load a subtitle
+      // track first via the subtitle sheet.
     }
     showControls();
   }

@@ -22,11 +22,7 @@ class _PlayerGestureLayerState extends ConsumerState<PlayerGestureLayer>
   // ── Seek flash ─────────────────────────────────────────────────────────────
   late final AnimationController _seekFlashCtrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 400),
-  );
-  late final Animation<double> _seekFlashAnim = CurvedAnimation(
-    parent: _seekFlashCtrl,
-    curve: Curves.easeOut,
+    duration: const Duration(milliseconds: 750),
   );
   bool _seekFlashLeft = false;
   bool _seekFlashRight = false;
@@ -223,7 +219,7 @@ class _PlayerGestureLayerState extends ConsumerState<PlayerGestureLayer>
             bottom: 0,
             width: size.width / 2,
             child: SeekFlash(
-              animation: _seekFlashAnim,
+              animation: _seekFlashCtrl,
               isForward: false,
               seekInterval: seekInterval,
             ),
@@ -235,7 +231,7 @@ class _PlayerGestureLayerState extends ConsumerState<PlayerGestureLayer>
             bottom: 0,
             width: size.width / 2,
             child: SeekFlash(
-              animation: _seekFlashAnim,
+              animation: _seekFlashCtrl,
               isForward: true,
               seekInterval: seekInterval,
             ),

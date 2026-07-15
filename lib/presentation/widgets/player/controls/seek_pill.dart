@@ -9,21 +9,21 @@ class _SeekPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final isForward = seconds > 0;
     final val = seconds.abs();
-    
-    IconData iconData;
+
+    final IconData iconData;
     if (isForward) {
       iconData = switch (val) {
-        5 => Icons.forward_5_rounded,
+        5  => Icons.forward_5_rounded,
         10 => Icons.forward_10_rounded,
         30 => Icons.forward_30_rounded,
-        _ => Icons.fast_forward_rounded,
+        _  => Icons.fast_forward_rounded,
       };
     } else {
       iconData = switch (val) {
-        5 => Icons.replay_5_rounded,
+        5  => Icons.replay_5_rounded,
         10 => Icons.replay_10_rounded,
         30 => Icons.replay_30_rounded,
-        _ => Icons.fast_rewind_rounded,
+        _  => Icons.fast_rewind_rounded,
       };
     }
 
@@ -58,5 +58,3 @@ class _SeekPill extends StatelessWidget {
     );
   }
 }
-
-
