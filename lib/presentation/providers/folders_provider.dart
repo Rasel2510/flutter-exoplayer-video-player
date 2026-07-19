@@ -86,14 +86,18 @@ Future<void> _saveSeenPaths(Set<String> paths) async {
   } catch (_) {}
 }
 
-// FIX #TTL: No TTL check — always return cached data if present.
 Future<List<VideoFolder>?> _loadCache() async {
   try {
     final prefs = await _p;
     final raw = prefs.getString(_cacheKey);
     if (raw == null) return null;
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list.map((e) => _folderFromMap(e as Map<String, dynamic>)).toList();
+    
+    // Offload heavy JSON parsing and mapping to a background isolate
+    // to prevent freezing the UI thread on launch for large libraries.
+    return await Isolate.run(() {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => _folderFromMap(e as Map<String, dynamic>)).toList();
+    });
   } catch (_) {
     return null;
   }

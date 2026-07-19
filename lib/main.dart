@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
 import 'app.dart';
-import 'data/engines/media_kit_engine.dart';
 import 'data/services/player_preferences_service.dart';
 import 'data/services/volume_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialise the libmpv/FFmpeg backend used as the software-decoder fallback
+  // for files the device's MediaCodec can't decode (see MediaKitEngine).
+  MediaKit.ensureInitialized();
   VolumeService.instance;
   // Warm persisted prefs (scan mode) before the first frame so the saved
   // library scan mode is applied immediately instead of flashing the default.
@@ -21,12 +24,4 @@ Future<void> main() async {
   // covered by a white system overlay on the first frame.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   runApp(const ProviderScope(child: VideoPlayerApp()));
-
-  // Initialize the MediaKit fallback in the background after the app has
-  // fully launched. This avoids a lag spike if a fallback is needed later,
-  // without blocking the critical startup path.
-  Future.delayed(const Duration(seconds: 2), () {
-    MediaKitEngine.ensureInitializedInBackground();
-  });
 }
- 

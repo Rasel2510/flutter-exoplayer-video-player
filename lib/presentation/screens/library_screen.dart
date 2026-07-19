@@ -117,12 +117,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       return;
     }
     setState(() => _checkingPermission = true);
-    await Permission.videos.request();
+    await [
+      Permission.videos,
+      Permission.storage,
+      Permission.notification,
+    ].request();
+    
     if (!mounted) return;
-    await Permission.storage.request();
-    if (!mounted) return;
-    await Permission.notification.request();
-    if (!mounted) return;
+
     final manageStatus = await Permission.manageExternalStorage.status;
     if (!manageStatus.isGranted) {
       _awaitingStorageSettings = true;

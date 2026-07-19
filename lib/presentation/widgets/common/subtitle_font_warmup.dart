@@ -15,32 +15,11 @@ import 'package:flutter_video_player/presentation/providers/subtitle_style_provi
 /// skipped), so this pays the cost up front without ever being visible.
 /// Mounted once at the app root (see app.dart) so it stays alive — and the
 /// shaped-font cache stays warm — for the whole app lifetime.
-class SubtitleFontWarmup extends StatefulWidget {
+class SubtitleFontWarmup extends StatelessWidget {
   const SubtitleFontWarmup({super.key});
 
   @override
-  State<SubtitleFontWarmup> createState() => _SubtitleFontWarmupState();
-}
-
-class _SubtitleFontWarmupState extends State<SubtitleFontWarmup> {
-  bool _ready = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Delay font shaping until after the first frame so we don't block
-    // the app launch.
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() => _ready = true);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (!_ready) return const SizedBox.shrink();
-    
     return Offstage(
       child: Column(
         children: [
